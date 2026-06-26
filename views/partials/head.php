@@ -9,14 +9,28 @@
 <!-- third party css end -->
 
 <!-- App css -->
-<link href="<?= BASE_URL ?>public/assets/css/vendor/jquery-jvectormap-1.2.2.css" rel="stylesheet" type="text/css">
-<link href="<?= BASE_URL ?>public/assets/css/style.css" rel="stylesheet" type="text/css">
 <link href="<?= BASE_URL ?>public/assets/css/icons.min.css" rel="stylesheet" type="text/css">
 <link href="<?= BASE_URL ?>public/assets/css/app.min.css" rel="stylesheet" type="text/css" id="light-style">
 <link href="<?= BASE_URL ?>public/assets/css/app-dark.min.css" rel="stylesheet" type="text/css" id="dark-style">
 
 <link rel="stylesheet" href="<?= BASE_URL ?>public/assets/css/bootstrapIcons.min.css">
 <link rel="stylesheet" href="<?= BASE_URL ?>public/assets/css/bootstrapTable.min.css">
+
+
+
+<!-- Icons. Uncomment required icon fonts -->
+<link rel="stylesheet" href="<?= BASE_URL ?>public/assets/s/vendor/fonts/boxicons.css" />
+
+<!-- Core CSS -->
+<link rel="stylesheet" href="<?= BASE_URL ?>public/assets/s/vendor/css/core.css" class="template-customizer-core-css" />
+<link rel="stylesheet" href="<?= BASE_URL ?>public/assets/s/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+<link rel="stylesheet" href="<?= BASE_URL ?>public/assets/s/css/demo.css" />
+
+<!-- Vendors CSS -->
+<link rel="stylesheet" href="<?= BASE_URL ?>public/assets/s/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+
+
+
 
 <script>
     const BASE_URL = "<?= BASE_URL ?>";

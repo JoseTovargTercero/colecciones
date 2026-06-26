@@ -26,7 +26,7 @@ class Database
 
         // Definimos estas constantes solo si no existen, para evitar notificaciones de "Constant already defined"
         if (!defined('APP_URL')) {
-            define('APP_URL', $_ENV['APP_URL'] ?? 'http://localhost/ERP_SISUPP');
+            define('APP_URL', $_ENV['APP_URL'] ?? 'http://localhost/colecciones');
         }
         if (!defined('FCM_PROJECT_ID')) {
             define('FCM_PROJECT_ID', $_ENV['FCM_PROJECT_ID'] ?? 'sissup-cb2db');

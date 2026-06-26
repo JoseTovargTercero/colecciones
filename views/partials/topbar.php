@@ -1,117 +1,135 @@
 <?php
 
 $userName = $_SESSION['nombre'] ?? 'Invitado';
-$userType = $_SESSION['user_type'] ?? 'Usuario';
+$userType = $_SESSION['codigo'] ?? '';
 ?>
 
 
-<div class="navbar-custom">
-    <ul class="list-unstyled topbar-menu float-end mb-0">
+<nav
+    class="layout-navbar container-fluid navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
+    id="layout-navbar">
+    <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
+        <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
+            <i class="bx bx-menu bx-sm"></i>
+        </a>
+    </div>
 
-        <li class="notification-list" id="download-app-li" style="display: none;">
-            <a class="nav-link" href="#" id="download-app-button" title="Descargar Aplicación">
-                <i class="dripicons-download noti-icon"></i>
-            </a>
-        </li>
-        <li class="dropdown notification-list">
-            <a class="nav-link dropdown-toggle arrow-none" data-bs-toggle="dropdown" href="#" role="button"
-                aria-haspopup="false" aria-expanded="false">
-                <i class="dripicons-bell noti-icon"></i>
-                <span class="badge noti-icon-badge" id="alert-count"></span>
-            </a>
-            <div class="dropdown-menu dropdown-menu-end dropdown-menu-animated dropdown-lg py-0"
-                id="dropdown-container">
-                <div class="p-2 border-top-0 border-start-0 border-end-0 border-dashed border">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <h6 class="m-0 font-16 fw-semibold">
-                                Notificaciones
-                            </h6>
-                        </div>
-                        <div class="col-auto">
-                            <a href="javascript:void(0);" id="clear-all-alerts"
-                                class="color-5 text-decoration-underline">
-                                <small>Marcar Como Leídas</small>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="p-2">
-                    <div class="d-flex gap-1" id="notification-tabs" role="tablist">
-                        <button class="btn btn-outline-primary btn-sm text-bold" id="all-tab"
-                            type="button">Todas</button>
-                        <button class="btn btn-outline-primary btn-sm text-bold active" id="unread-tab" type="button">No
-                            leídas (<span id="unread-count">0</span>)</button>
-                    </div>
-                </div>
-
-                <div class="px-1 overflow-auto" style="max-height: 300px;" data-simplebar="init"
-                    id="alerts-scroll-container">
-                    <div class="simplebar-content" style="padding: 0px 6px;" id="alerts-container">
-                    </div>
-                </div>
-
-                <a href="notifications"
-                    class="dropdown-item text-center color-3 notify-item border-top border-light py-2">
-                    Ver notificaciones
-                </a>
+    <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+        <!-- Search -->
+        <div class="navbar-nav align-items-center">
+            <div class="nav-item d-flex align-items-center">
+                <i class="bx bx-search fs-4 lh-0"></i>
+                <input
+                    type="text"
+                    class="form-control border-0 shadow-none"
+                    placeholder="Buscar..."
+                    aria-label="Buscar..." />
             </div>
-        </li>
+        </div>
 
-        <li class="dropdown notification-list">
-            <a class="nav-link dropdown-toggle nav-user arrow-none me-0" data-bs-toggle="dropdown" href="#"
-                role="button" aria-haspopup="false" aria-expanded="false">
-                <span class="account-user-avatar">
-                    <img src="<?= BASE_URL ?>public/assets/images/users/avatar-1.jpg" alt="user-image"
-                        class="rounded-circle">
-                </span>
-                <span>
-                    <span class="account-user-name"><?= $userName ?></span>
-                    <span class="account-position"><?= $userType ?></span>
-                </span>
-            </a>
-            <div class="dropdown-menu dropdown-menu-end dropdown-menu-animated topbar-dropdown-menu profile-dropdown">
-                <div class=" dropdown-header noti-title">
-                    <h6 class="text-overflow m-0">Bienvenido !</h6>
+        <ul class="navbar-nav flex-row align-items-center ms-auto">
+
+            <!-- Download App -->
+            <li class="nav-item lh-1 me-2" id="download-app-li" style="display: none;">
+                <a class="nav-link" href="#" id="download-app-button" title="Descargar Aplicación">
+                    <i class="bx bx-download bx-sm"></i>
+                </a>
+            </li>
+
+            <!-- Notifications -->
+            <li class="nav-item dropdown me-2">
+                <a class="nav-link dropdown-toggle hide-arrow" href="#" data-bs-toggle="dropdown" id="notification-dropdown-toggle">
+                    <i class="bx bx-bell bx-sm"></i>
+                    <span class="badge bg-danger rounded-pill badge-notifications" id="alert-count">0</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end dropdown-lg py-0" id="dropdown-container">
+                    <div class="p-2 border-top-0 border-start-0 border-end-0 border-dashed border">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h6 class="m-0 fw-semibold">Notificaciones</h6>
+                            </div>
+                            <div class="col-auto">
+                                <a href="javascript:void(0);" id="clear-all-alerts" class="text-decoration-underline">
+                                    <small>Marcar Como Leídas</small>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-2">
+                        <div class="d-flex gap-1" id="notification-tabs" role="tablist">
+                            <button class="btn btn-outline-primary btn-sm" id="all-tab" type="button">Todas</button>
+                            <button class="btn btn-outline-primary btn-sm active" id="unread-tab" type="button">
+                                No leídas (<span id="unread-count">0</span>)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="px-1 overflow-auto" style="max-height: 300px;" data-simplebar="init" id="alerts-scroll-container">
+                        <div class="simplebar-content" style="padding: 0px 6px;" id="alerts-container"></div>
+                    </div>
+
+                    <a href="notifications" class="dropdown-item text-center notify-item border-top py-2">
+                        Ver notificaciones
+                    </a>
                 </div>
-                <a href="<?= BASE_URL ?>perfil" class="dropdown-item notify-item">
-                    <i class="mdi mdi-account-circle me-1"></i>
-                    <span>Mi perfil</span>
-                </a>
-                <a href="<?= BASE_URL ?>api/logout" class="dropdown-item notify-item">
-                    <i class="mdi mdi-account-circle me-1"></i>
-                    <span>Cerrar Sesión</span>
-                </a>
-            </div>
-        </li>
+            </li>
 
-    </ul>
-    <button class="button-menu-mobile open-left">
-        <i class="mdi mdi-menu"></i>
-    </button>
-
-</div>
+            <!-- User -->
+            <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+                    <div class="avatar avatar-online">
+                        <img src="<?= BASE_URL ?>public/assets/images/users/avatar-1.jpg" alt class="w-px-40 h-auto rounded-circle" />
+                    </div>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="#">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0 me-3">
+                                    <div class="avatar avatar-online">
+                                        <img src="<?= BASE_URL ?>public/assets/images/users/avatar-1.jpg" alt class="w-px-40 h-auto rounded-circle" />
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <span class="fw-semibold d-block"><?= $userName ?></span>
+                                    <small class="text-muted"><?= $userType ?></small>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                    <li><div class="dropdown-divider"></div></li>
+                    <li>
+                        <a class="dropdown-item" href="<?= BASE_URL ?>perfil">
+                            <i class="bx bx-user me-2"></i>
+                            <span class="align-middle">Mi Perfil</span>
+                        </a>
+                    </li>
+                    <li><div class="dropdown-divider"></div></li>
+                    <li>
+                        <a class="dropdown-item" href="<?= BASE_URL ?>api/logout">
+                            <i class="bx bx-power-off me-2"></i>
+                            <span class="align-middle">Cerrar Sesión</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <!--/ User -->
+        </ul>
+    </div>
+</nav>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-
-        // 1. Detectar si es un dispositivo móvil
         const userAgent = navigator.userAgent;
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-
         const downloadLi = document.getElementById('download-app-li');
         const downloadButton = document.getElementById('download-app-button');
 
-        // 2. Si es móvil, mostrar el botón
         if (isMobile) {
-            downloadLi.style.display = 'block'; // O 'list-item'
-
-            // 3. Añadir el evento de clic
+            downloadLi.style.display = 'list-item';
             downloadButton.addEventListener('click', function(e) {
-                e.preventDefault(); // Evita que el enlace '#' navegue
-
-                // 4. Preguntar al usuario con SweetAlert2
+                e.preventDefault();
                 Swal.fire({
                     title: '¿Descargar Aplicación?',
                     text: "Se descargará el archivo de instalación para Android.",
@@ -120,62 +138,25 @@ $userType = $_SESSION['user_type'] ?? 'Usuario';
                     confirmButtonText: 'Sí, descargar',
                     cancelButtonText: 'Cancelar',
                 }).then((result) => {
-
-                    // 5. Si el usuario confirma
                     if (result.isConfirmed) {
-
-                        // --- ¡IMPORTANTE! ---
-                        // 6. Coloca aquí la URL de tu archivo .apk en el servidor
                         const downloadUrl = '<?= BASE_URL ?>downloads/app.txt';
-
-                        const isAndroid = /Android/i.test(userAgent);
-                        const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
-
-                        // 7. Comprobar si es Android
-
-                        // 8. Crear un enlace 'a' en memoria para forzar la descarga
-                        // Esto funciona mejor que un simple window.location.href
                         const link = document.createElement('a');
                         link.href = downloadUrl;
-
-                        // Opcional: puedes forzar el nombre del archivo
-                        link.setAttribute('download', 'nombre-de-tu-app.apk');
-
-                        // Añadir el enlace al cuerpo, simular clic y removerlo
+                        link.setAttribute('download', 'app.apk');
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
-
-
                     }
                 });
             });
         }
 
-
-        // Ocultar header al hacer scroll down y mostrar al hacer scroll up
-        const navbar = document.querySelector('.navbar-custom');
-        let lastScroll = 0;
-
-        window.addEventListener('scroll', () => {
-            const currentScroll = window.pageYOffset;
-
-            // Siempre mostrar en scroll == 0
-            if (currentScroll <= 0) {
-                navbar.classList.remove('navbar-hidden');
-                return;
-            }
-
-            // Si vamos hacia abajo → ocultar
-            if (currentScroll > lastScroll) {
-                navbar.classList.add('navbar-hidden');
-            }
-            // Si vamos hacia arriba → mostrar
-            else {
-                navbar.classList.remove('navbar-hidden');
-            }
-
-            lastScroll = currentScroll;
+        // Menu toggle
+        document.querySelectorAll('.layout-menu-toggle').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.body.classList.toggle('layout-menu-collapsed');
+            });
         });
     });
 </script>

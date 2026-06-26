@@ -35,7 +35,7 @@ const NotificationController = {
       unreadTab: document.getElementById('unread-tab'),
       clearAllBtn: document.getElementById('clear-all-alerts'),
       dropdownToggle: document.querySelector(
-        '.notification-list .dropdown-toggle'
+        '#notification-dropdown-toggle'
       ),
       scrollContainer: document.getElementById('alerts-scroll-container'),
       dropdownContainer: document.getElementById('dropdown-container'),

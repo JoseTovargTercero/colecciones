@@ -1,14 +1,12 @@
 export function getBaseUrl() {
-  const localBaseUrl = 'http://localhost/ERP_SISUPP'
-  const prodBaseUrl = 'https://sigob.net/ERP_SISUPP'
-
-  // Verificamos si estamos en un entorno de localhost
-  if (window.location.origin.includes('localhost')) {
-    return localBaseUrl
+  // Usa la variable global definida dinámicamente por PHP, o determina la URL base desde window.location
+  if (window.baseUrl) {
+    return window.baseUrl.replace(/\/+$/, '')
   }
-
-  // Si no estamos en localhost, asumimos que estamos en producción
-  return prodBaseUrl
+  const pathParts = window.location.pathname.split('/')
+  // Toma el primer segmento de la ruta como base (ej: /colecciones/ o /ERP_SISUPP/)
+  const base = pathParts[1] || ''
+  return window.location.origin + '/' + base
 }
 
 export async function handleRequestFetch(

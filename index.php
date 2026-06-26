@@ -6,16 +6,20 @@ require_once __DIR__ . '/middlewares/SessionRedirectMiddleware.php';
 require_once __DIR__ . '/middlewares/LoginRequiredMiddleware.php';
 require_once __DIR__ . '/helpers/helpers.php'; // Permission helpers
 
+require_once __DIR__ . '/controllers/AuthController.php';
 require_once __DIR__ . '/controllers/SystemUserController.php';
-
 require_once __DIR__ . '/controllers/MenuController.php';
 require_once __DIR__ . '/controllers/MenuCategoriaController.php';
-
 require_once __DIR__ . '/controllers/UsersPermisosController.php';
-
 require_once __DIR__ . '/controllers/AlertaController.php';
 require_once __DIR__ . '/controllers/NotificationController.php';
 require_once __DIR__ . '/controllers/RecoveryPasswordController.php';
+require_once __DIR__ . '/controllers/EmpresaController.php';
+require_once __DIR__ . '/controllers/TemporadaController.php';
+require_once __DIR__ . '/controllers/ColeccionController.php';
+require_once __DIR__ . '/controllers/PremioController.php';
+require_once __DIR__ . '/controllers/VendedorController.php';
+require_once __DIR__ . '/controllers/AsignacionController.php';
 
 
 use App\Core\ViewRenderer;
@@ -49,17 +53,8 @@ $viewRenderer = new ViewRenderer('views/');
 $router = new Router($viewRenderer);
 
 
-// Login
-$router->post('system_users/login', ['controlador' => SystemUserController::class, 'accion' => 'login']);
-$router->post('/recovery/verify-email', [
-    'controlador' => RecoveryPasswordController::class,
-    'accion' => 'verifyEmail'
-]);
 
-$router->post('/recovery/update-password', [
-    'controlador' => RecoveryPasswordController::class,
-    'accion' => 'updatePassword'
-]);
+
 
 
 
@@ -79,6 +74,12 @@ $router->group(['middleware' => AuthMiddleware::class], function ($router) {
 // El perfil es la única vista que todos los usuarios logueados deben ver
 $router->group(['middleware' => LoginRequiredMiddleware::class], function ($router) {
     $router->get('/perfil', ['vista' => 'modules/perfil_view', 'vistaData' => ['titulo' => 'Perfil de Usuario']]);
+    $router->get('/empresas', ['vista' => 'modules/empresas_view', 'vistaData' => ['titulo' => 'Empresas']]);
+    $router->get('/temporadas', ['vista' => 'modules/temporadas_view', 'vistaData' => ['titulo' => 'Temporadas']]);
+    $router->get('/colecciones', ['vista' => 'modules/colecciones_view', 'vistaData' => ['titulo' => 'Colecciones']]);
+    $router->get('/premios', ['vista' => 'modules/premios_view', 'vistaData' => ['titulo' => 'Premios']]);
+    $router->get('/vendedores', ['vista' => 'modules/vendedores_view', 'vistaData' => ['titulo' => 'Vendedores']]);
+    $router->get('/asignaciones', ['vista' => 'modules/asignaciones_view', 'vistaData' => ['titulo' => 'Asignaciones']]);
 });
 
 
@@ -113,39 +114,47 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->delete('/system_users/{user_id}', ['controlador' => SystemUserController::class, 'accion' => 'eliminar']);
     // check email user
     $router->post('/system_users/check_email', ['controlador' => SystemUserController::class, 'accion' => 'checkEmail']);
-    $router->get('/logout', ['controlador' => SystemUserController::class, 'accion' => 'logout']);
-    // endpoints de menús
-    $router->get('/menus', ['controlador' => MenuController::class, 'accion' => 'listar']);
-    $router->get('/menus/{menu_id}', ['controlador' => MenuController::class, 'accion' => 'mostrar']);
-    $router->post('/menus', ['controlador' => MenuController::class, 'accion' => 'crear']);
-    $router->post('/menus/{menu_id}', ['controlador' => MenuController::class, 'accion' => 'actualizar']);
-    $router->delete('/menus/{menu_id}', ['controlador' => MenuController::class, 'accion' => 'eliminar']);
-    $router->post('/menus-reordenar', ['controlador' => MenuController::class, 'accion' => 'reordenar']);
-
-    // Endpoints para la gestión de categorías del menú
-    $router->get('/menus-categorias', ['controlador' => MenuCategoriaController::class, 'accion' => 'listar']);
-    $router->post('/menus-categorias/reordenar', ['controlador' => MenuCategoriaController::class, 'accion' => 'reordenar']);
-
-    // endpoints de permisos de usuarios
-    $router->post('/users-permisos', ['controlador' => UsersPermisosController::class, 'accion' => 'asignar']);
-    $router->get('/users-permisos/user/{user_id}', ['controlador' => UsersPermisosController::class, 'accion' => 'listarPorUsuario']);
-    $router->delete('/users-permisos/{users_permisos_id}', ['controlador' => UsersPermisosController::class, 'accion' => 'eliminarUno']);
-    $router->delete('/users-permisos/user/{user_id}', ['controlador' => UsersPermisosController::class, 'accion' => 'eliminarPorUsuario']);
-
-    // endpoint de login
+    // Login
     $router->post('/system_users/login', ['controlador' => SystemUserController::class, 'accion' => 'login']);
-    $router->post('/system_users/login_app', ['controlador' => SystemUserController::class, 'accion' => 'loginApp']);
-    $router->post('/system_users/verificar_login', ['controlador' => SystemUserController::class, 'accion' => 'verificarLoginApp']);
-    //gestion de animales
+    // Logout
+    $router->get('/logout', ['controlador' => AuthController::class, 'accion' => 'logout']);
 
-    // endpoints de session_management
-    $router->get('/session_management', ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'showAll']);
-    $router->get('/session_management/{id}', ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'showById']);
-    $router->post('/session_management', ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'create']);
-    $router->post('/session_management/kick', ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'kick']);
-    $router->post('/session_management/store-status', ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'storeStatus']);
-    $router->get('/session_management/check-status', ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'checkStatus']);
-    $router->get('/session_management/export', ['controlador' => \App\Controllers\SessionManagementController::class, 'accion' => 'export']);
+    // endpoints de empresas
+    $router->get('/empresas',         ['controlador' => EmpresaController::class, 'accion' => 'listar']);
+    $router->get('/empresas/{id}',    ['controlador' => EmpresaController::class, 'accion' => 'mostrar']);
+    $router->post('/empresas',        ['controlador' => EmpresaController::class, 'accion' => 'crear']);
+    $router->post('/empresas/{id}',   ['controlador' => EmpresaController::class, 'accion' => 'actualizar']);
+    $router->delete('/empresas/{id}', ['controlador' => EmpresaController::class, 'accion' => 'eliminar']);
+
+    // endpoints de temporadas
+    $router->get('/temporadas', ['controlador' => TemporadaController::class, 'accion' => 'listar']);
+    $router->post('/temporadas', ['controlador' => TemporadaController::class, 'accion' => 'crear']);
+    $router->put('/temporadas/{id}', ['controlador' => TemporadaController::class, 'accion' => 'actualizar']);
+    $router->delete('/temporadas/{id}', ['controlador' => TemporadaController::class, 'accion' => 'eliminar']);
+
+    // endpoints de colecciones
+    $router->get('/colecciones', ['controlador' => ColeccionController::class, 'accion' => 'listar']);
+    $router->post('/colecciones', ['controlador' => ColeccionController::class, 'accion' => 'crear']);
+    $router->post('/colecciones/{id}', ['controlador' => ColeccionController::class, 'accion' => 'actualizar']);
+    $router->delete('/colecciones/{id}', ['controlador' => ColeccionController::class, 'accion' => 'eliminar']);
+
+    // endpoints de premios
+    $router->get('/premios', ['controlador' => PremioController::class, 'accion' => 'listar']);
+    $router->post('/premios', ['controlador' => PremioController::class, 'accion' => 'crear']);
+    $router->post('/premios/{id}', ['controlador' => PremioController::class, 'accion' => 'actualizar']);
+    $router->delete('/premios/{id}', ['controlador' => PremioController::class, 'accion' => 'eliminar']);
+
+    // endpoints de vendedores
+    $router->get('/vendedores', ['controlador' => VendedorController::class, 'accion' => 'listar']);
+    $router->post('/vendedores', ['controlador' => VendedorController::class, 'accion' => 'crear']);
+    $router->post('/vendedores/{id}', ['controlador' => VendedorController::class, 'accion' => 'actualizar']);
+    $router->delete('/vendedores/{id}', ['controlador' => VendedorController::class, 'accion' => 'eliminar']);
+
+    // endpoints de asignaciones
+    $router->get('/asignaciones', ['controlador' => AsignacionController::class, 'accion' => 'listar']);
+    $router->post('/asignaciones', ['controlador' => AsignacionController::class, 'accion' => 'crear']);
+    $router->delete('/asignaciones/{id}', ['controlador' => AsignacionController::class, 'accion' => 'eliminar']);
+    $router->get('/asignaciones/{id}/cuotas', ['controlador' => AsignacionController::class, 'accion' => 'cuotas']);
 
     // endpoints de alertas
     $router->get('/alertas', ['controlador' => AlertaController::class, 'accion' => 'listar']);
