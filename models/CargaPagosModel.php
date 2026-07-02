@@ -63,40 +63,85 @@ class CargaPagosModel
 
     private function procesarTotal(int $empresa_id, string $temporada_id, int $vendedor_id, float $monto, ?string $numOp, ?string $comprobante, string $u): void
     {
-        // Calcular deuda total
+        // Obtener cuotas pendientes con su ganancia_vendedor
         $stmt = $this->db->prepare(
-            "SELECT SUM(c.monto_pendiente) as total_deuda
-             FROM asignaciones_colecciones ac
-             INNER JOIN cuotas_coleccion c ON c.asignacion_id = ac.id
+            "SELECT c.id, c.asignacion_id, c.numero_cuota, c.monto_a_pagar, c.monto_pendiente, c.fecha_pago,
+                    ac.ganancia_vendedor
+             FROM cuotas_coleccion c
+             INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
              WHERE ac.vendedor_id = ? AND ac.temporada_id = ? AND ac.estado = 'activa'
-             AND c.estatus_pago IN ('pendiente','vencido','dentro_de_margen')"
+             AND c.estatus_pago IN ('pendiente','vencido','dentro_de_margen')
+             ORDER BY c.fecha_pago ASC"
         );
         $stmt->bind_param('is', $vendedor_id, $temporada_id);
         $stmt->execute();
         $r = $stmt->get_result();
-        $row = $r->fetch_assoc();
+        $cuotas = $r->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
 
-        $total_deuda = (float)($row['total_deuda'] ?? 0);
-        if ($monto < $total_deuda) {
-            throw new Exception("El monto ($monto) no cubre la deuda total ($total_deuda).");
+        if (empty($cuotas)) {
+            throw new Exception('No hay cuotas pendientes.');
         }
 
-        // Actualizar todas las cuotas pendientes del vendedor en esta temporada
-        $stmt = $this->db->prepare(
-            "UPDATE cuotas_coleccion c
-             INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
-             SET c.monto_pagado = c.monto_a_pagar,
-                  c.monto_pendiente = 0,
-                  c.estatus_pago = 'realizado',
-                  c.fecha_pago = CURDATE(),
-                  c.comprobante = IF(? IS NULL, c.comprobante, IF(c.comprobante IS NULL OR c.comprobante = '', ?, CONCAT(c.comprobante, '|', ?)))
-             WHERE ac.vendedor_id = ? AND ac.temporada_id = ? AND ac.estado = 'activa'
-              AND c.estatus_pago IN ('pendiente','vencido','dentro_de_margen')"
-        );
-        $stmt->bind_param('sssis', $comprobante, $comprobante, $comprobante, $vendedor_id, $temporada_id);
-        $stmt->execute();
-        $stmt->close();
+        // Identificar la última cuota de cada asignación
+        $lastCuotaPorAsignacion = [];
+        foreach ($cuotas as $c) {
+            $lastCuotaPorAsignacion[(int)$c['asignacion_id']] = $c;
+        }
+
+        // Calcular deuda efectiva (total pendiente - ganancia_vendedor de las últimas cuotas)
+        $totalPendiente = 0;
+        $totalDescuento = 0;
+        foreach ($cuotas as $c) {
+            $pe = (float)$c['monto_pendiente'];
+            $totalPendiente += $pe;
+            $asigId = (int)$c['asignacion_id'];
+            if ($lastCuotaPorAsignacion[$asigId]['id'] === $c['id']) {
+                $gv = (float)($c['ganancia_vendedor'] ?? 0);
+                $totalDescuento += min($gv, $pe);
+            }
+        }
+
+        $deudaEfectiva = $totalPendiente - $totalDescuento;
+        if ($monto < $deudaEfectiva) {
+            throw new Exception("El monto ($monto) no cubre la deuda total efectiva ($deudaEfectiva).");
+        }
+
+        // Actualizar cada cuota individualmente
+        foreach ($cuotas as $c) {
+            $cuotaId = (int)$c['id'];
+            $asigId = (int)$c['asignacion_id'];
+            $montoAPagar = (float)$c['monto_a_pagar'];
+            $gv = (float)($c['ganancia_vendedor'] ?? 0);
+            $esUltima = $lastCuotaPorAsignacion[$asigId]['id'] === $cuotaId;
+
+            if ($esUltima && $gv > 0) {
+                $nuevoPagado = max(0, $montoAPagar - $gv);
+                $stmt = $this->db->prepare(
+                    "UPDATE cuotas_coleccion
+                     SET monto_pagado = ?,
+                         monto_pendiente = 0,
+                         estatus_pago = 'realizado',
+                         fecha_pago = CURDATE(),
+                         comprobante = IF(? IS NULL, comprobante, IF(comprobante IS NULL OR comprobante = '', ?, CONCAT(comprobante, '|', ?)))
+                     WHERE id = ?"
+                );
+                $stmt->bind_param('dsssi', $nuevoPagado, $comprobante, $comprobante, $comprobante, $cuotaId);
+            } else {
+                $stmt = $this->db->prepare(
+                    "UPDATE cuotas_coleccion
+                     SET monto_pagado = monto_a_pagar,
+                         monto_pendiente = 0,
+                         estatus_pago = 'realizado',
+                         fecha_pago = CURDATE(),
+                         comprobante = IF(? IS NULL, comprobante, IF(comprobante IS NULL OR comprobante = '', ?, CONCAT(comprobante, '|', ?)))
+                     WHERE id = ?"
+                );
+                $stmt->bind_param('sssi', $comprobante, $comprobante, $comprobante, $cuotaId);
+            }
+            $stmt->execute();
+            $stmt->close();
+        }
 
         // Finalizar asignaciones
         $stmt = $this->db->prepare(
@@ -107,14 +152,19 @@ class CargaPagosModel
         $stmt->bind_param('is', $vendedor_id, $temporada_id);
         $stmt->execute();
         $stmt->close();
+
+        $this->verificarYCompletarPremios($empresa_id, $temporada_id, $vendedor_id);
     }
 
     private function procesarCuotaExacta(int $cuota_id, float $monto, ?string $numOp, ?string $comprobante, string $u): void
     {
         // Obtener cuota
         $stmt = $this->db->prepare(
-            "SELECT c.id, c.monto_a_pagar, c.monto_pendiente, c.asignacion_id
+            "SELECT c.id, c.monto_a_pagar, c.monto_pendiente, c.asignacion_id,
+                    cc.empresa_id, ac.temporada_id, ac.vendedor_id
              FROM cuotas_coleccion c
+             INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
+             INNER JOIN colecciones_combos cc ON ac.coleccion_combo_id = cc.id
              WHERE c.id = ? AND c.estatus_pago IN ('pendiente','vencido','dentro_de_margen')"
         );
         $stmt->bind_param('i', $cuota_id);
@@ -159,6 +209,8 @@ class CargaPagosModel
             $stmt->bind_param('i', $cuota['asignacion_id']);
             $stmt->execute();
             $stmt->close();
+
+            $this->verificarYCompletarPremios((int)$cuota['empresa_id'], $cuota['temporada_id'], (int)$cuota['vendedor_id']);
         }
     }
 
@@ -166,9 +218,10 @@ class CargaPagosModel
     {
         $restante = $monto;
 
-        // Obtener cuotas pendientes/no realizadas ordenadas por fecha_pago ASC
+        // Obtener cuotas pendientes con ganancia_vendedor
         $stmt = $this->db->prepare(
-            "SELECT c.id, c.asignacion_id, c.monto_a_pagar, c.monto_pendiente, c.fecha_pago
+            "SELECT c.id, c.asignacion_id, c.monto_a_pagar, c.monto_pendiente, c.fecha_pago,
+                    ac.ganancia_vendedor
              FROM cuotas_coleccion c
              INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
              WHERE ac.vendedor_id = ? AND ac.temporada_id = ? AND ac.estado = 'activa'
@@ -183,9 +236,15 @@ class CargaPagosModel
 
         if (empty($cuotas)) throw new Exception('No hay cuotas pendientes para abonar.');
 
+        // Identificar la última cuota de cada asignación
+        $lastCuotaPorAsignacion = [];
+        foreach ($cuotas as $c) {
+            $lastCuotaPorAsignacion[(int)$c['asignacion_id']] = $c;
+        }
+
         $stmtFull = $this->db->prepare(
             "UPDATE cuotas_coleccion
-             SET monto_pagado = monto_a_pagar,
+             SET monto_pagado = ?,
                  monto_pendiente = 0,
                  estatus_pago = 'realizado',
                  comprobante = IF(? IS NULL, comprobante, IF(comprobante IS NULL OR comprobante = '', ?, CONCAT(comprobante, '|', ?)))
@@ -206,14 +265,20 @@ class CargaPagosModel
         foreach ($cuotas as $cuota) {
             if ($restante <= 0) break;
 
-            $pendiente = (float)$cuota['monto_pendiente'];
             $cuotaId = (int)$cuota['id'];
             $asigId = (int)$cuota['asignacion_id'];
+            $montoAPagar = (float)$cuota['monto_a_pagar'];
+            $pendienteReal = (float)$cuota['monto_pendiente'];
+            $ganancia = (float)($cuota['ganancia_vendedor'] ?? 0);
+            $esUltima = $lastCuotaPorAsignacion[$asigId]['id'] === $cuotaId;
+            $descuento = ($esUltima && $ganancia > 0) ? min($ganancia, $pendienteReal) : 0;
+            $pendienteEfectivo = $pendienteReal - $descuento;
 
-            if ($restante >= $pendiente) {
-                $pagadoAhora = $pendiente;
+            if ($restante >= $pendienteEfectivo) {
+                $pagadoAhora = $pendienteEfectivo;
                 $restante -= $pagadoAhora;
-                $stmtFull->bind_param('sssi', $comprobante, $comprobante, $comprobante, $cuotaId);
+                $nuevoPagado = $montoAPagar - $descuento;
+                $stmtFull->bind_param('dsssi', $nuevoPagado, $comprobante, $comprobante, $comprobante, $cuotaId);
                 $stmtFull->execute();
 
                 if (!isset($asignacionesFinalizadas[$asigId])) {
@@ -249,6 +314,8 @@ class CargaPagosModel
                 $stmt2->close();
             }
         }
+
+        $this->verificarYCompletarPremios($empresa_id, $temporada_id, $vendedor_id);
     }
 
     private function upload(): ?string
@@ -269,6 +336,7 @@ class CargaPagosModel
     {
         $stmt = $this->db->prepare(
             "SELECT c.id, c.numero_cuota, c.monto_a_pagar, c.monto_pendiente, c.fecha_pago, c.fecha_vencimiento, c.estatus_pago,
+                    ac.id as asignacion_id, ac.ganancia_vendedor,
                     cc.nombre as coleccion_nombre
              FROM cuotas_coleccion c
              INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
@@ -290,11 +358,13 @@ class CargaPagosModel
         $stmt = $this->db->prepare(
             "SELECT c.id, c.numero_cuota, c.monto_a_pagar, c.monto_pagado, c.monto_pendiente,
                     c.fecha_pago, c.fecha_vencimiento, c.estatus_pago,
+                    ac.id as asignacion_id, ac.ganancia_vendedor,
                     cc.nombre as coleccion_nombre
              FROM cuotas_coleccion c
              INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
              INNER JOIN colecciones_combos cc ON ac.coleccion_combo_id = cc.id
              WHERE ac.vendedor_id = ? AND ac.temporada_id = ? AND cc.empresa_id = ?
+             AND ac.estado = 'activa' AND c.estatus_pago = 'pendiente'
              ORDER BY c.fecha_pago ASC"
         );
         $stmt->bind_param('isi', $vendedor_id, $temporada_id, $empresa_id);
@@ -311,8 +381,10 @@ class CargaPagosModel
             "SELECT cp.id, cp.cuota_id, cp.monto, cp.numero_operacion, cp.comprobante, cp.created_at,
                     c.numero_cuota
              FROM comprobantes cp
-             LEFT JOIN cuotas_coleccion c ON cp.cuota_id = c.id
+             INNER JOIN cuotas_coleccion c ON cp.cuota_id = c.id
+             INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
              WHERE cp.empresa_id = ? AND cp.temporada_id = ? AND cp.vendedor_id = ?
+             AND ac.estado = 'activa' AND c.estatus_pago = 'pendiente'
              ORDER BY cp.created_at DESC"
         );
         $stmt->bind_param('isi', $empresa_id, $temporada_id, $vendedor_id);
@@ -339,5 +411,61 @@ class CargaPagosModel
         $row = $r->fetch_assoc();
         $stmt->close();
         return (float)$row['total'];
+    }
+
+    private function verificarYCompletarPremios(int $empresa_id, string $temporada_id, int $vendedor_id): void
+    {
+        $stmt = $this->db->prepare(
+            "SELECT COUNT(*) as activas
+             FROM asignaciones_colecciones ac
+             INNER JOIN colecciones_combos cc ON ac.coleccion_combo_id = cc.id
+             WHERE ac.vendedor_id = ? AND ac.temporada_id = ? AND cc.empresa_id = ?
+             AND ac.estado != 'finalizada'"
+        );
+        $stmt->bind_param('isi', $vendedor_id, $temporada_id, $empresa_id);
+        $stmt->execute();
+        $r = $stmt->get_result();
+        $row = $r->fetch_assoc();
+        $stmt->close();
+
+        if ((int)$row['activas'] === 0) {
+            $stmt = $this->db->prepare(
+                "UPDATE premios_solicitados
+                 SET status = 'completado'
+                 WHERE empresa_id = ? AND temporada_id = ? AND vendedor_id = ?
+                 AND status IN ('solicitado', 'pendiente')"
+            );
+            $stmt->bind_param('isi', $empresa_id, $temporada_id, $vendedor_id);
+            $stmt->execute();
+            $stmt->close();
+        }
+    }
+
+    public function obtenerPremiosVendedor(int $empresa_id, string $temporada_id, int $vendedor_id): array
+    {
+        // Prevenir error si la tabla no ha sido creada aún
+        $this->db->query("CREATE TABLE IF NOT EXISTS premios_solicitados (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            vendedor_id INT NOT NULL,
+            empresa_id INT NOT NULL,
+            temporada_id INT NOT NULL,
+            premio_id INT NOT NULL,
+            status VARCHAR(50) DEFAULT 'solicitado',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+
+        $stmt = $this->db->prepare(
+            "SELECT ps.id, ps.status, ps.created_at, p.nombre, p.valor
+             FROM premios_solicitados ps
+             INNER JOIN premios p ON ps.premio_id = p.id
+             WHERE ps.empresa_id = ? AND ps.temporada_id = ? AND ps.vendedor_id = ?
+             ORDER BY ps.created_at DESC"
+        );
+        $stmt->bind_param('isi', $empresa_id, $temporada_id, $vendedor_id);
+        $stmt->execute();
+        $r = $stmt->get_result();
+        $rows = $r->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        return $rows;
     }
 }

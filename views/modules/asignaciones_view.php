@@ -410,6 +410,7 @@
             const empId = document.getElementById('aEmpresa').value;
             const emp = this.empresas.find(e => e.id === empId);
             this.cfgCuotas = emp || null;
+            this.diasRetraso = emp ? (parseInt(emp.dias_retraso_permitido) || 3) : 3;
 
             const cols = this.colecciones.filter(c => c.empresa_id === empId);
             this._fillSelect('aColeccion', cols, c => ({
@@ -577,7 +578,7 @@
                 <td>${c.porcentaje.toFixed(2)}%</td>
                 <td class="fw-medium">$${c.monto.toFixed(2)}</td>
                 <td>${fechaInput}</td>
-                <td>${calculo === 'manual' ? '' : this._sumarFecha(c.fecha_pago, 3)}</td>
+                <td>${calculo === 'manual' ? '' : this._sumarFecha(c.fecha_pago, this.diasRetraso)}</td>
             </tr>`;
             });
 
@@ -594,7 +595,7 @@
                     const idx = parseInt(e.target.getAttribute('data-idx'));
                     this.cuotasCalc[idx].fecha_pago = e.target.value;
                     const td = e.target.closest('tr').querySelector('td:last-child');
-                    if (td) td.textContent = this._sumarFecha(e.target.value, 3);
+                    if (td) td.textContent = this._sumarFecha(e.target.value, this.diasRetraso);
                 });
             });
 

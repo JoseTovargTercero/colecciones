@@ -113,18 +113,16 @@
                                 <input type="file" class="form-control" id="cpComprobante" name="comprobante" accept="image/*">
                             </div>
                         </div>
-                        <div class="col-md-6" id="cpAbonoPreview" style="display:none">
-                            <h6>Distribución del abono</h6>
-                            <div class="table-responsive" style="max-height:400px;overflow-y:auto">
-                                <table class="table table-sm table-bordered mb-0">
-                                    <thead class="table-light sticky-top">
+                        <div class="col-md-7" id="cpAbonoPreview" style="display:none">
+                            <h6 class="fw-semibold mb-2"><i class="bx bx-donate-blood text-primary me-1"></i>Distribución del abono</h6>
+                            <div style="max-height:420px;overflow-y:auto;border:1px solid #e9ecef;border-radius:8px">
+                                <table class="table table-sm table-borderless mb-0">
+                                    <thead class="table-light" style="position:sticky;top:0;z-index:2;">
                                         <tr>
-                                            <th>#</th>
-                                            <th>Fecha</th>
-                                            <th>Colección</th>
-                                            <th>Monto</th>
-                                            <th>Pendiente</th>
-                                            <th>Resultado</th>
+                                            <th style="width:35%">Cuota / Fecha</th>
+                                            <th style="width:30%">Por pagar</th>
+                                            <th style="width:15%">Desc.</th>
+                                            <th style="width:20%">Aplicación</th>
                                         </tr>
                                     </thead>
                                     <tbody id="cpAbonoPreviewBody"></tbody>
@@ -165,6 +163,7 @@
                                 <div class="card-body text-center py-3">
                                     <div class="text-muted small text-uppercase fw-semibold tracking-wide">Deuda Total</div>
                                     <div class="display-6 fw-bold text-primary mt-1" id="cpDeudaTotalLabel">$0.00</div>
+                                    <br>
                                 </div>
                             </div>
                         </div>
@@ -173,14 +172,18 @@
                                 <div class="card-body text-center py-3">
                                     <div class="text-muted small text-uppercase fw-semibold tracking-wide">Total Pagado</div>
                                     <div class="display-6 fw-bold text-success mt-1" id="cpDeudaPagadoLabel">$0.00</div>
+                                    <br>
                                 </div>
                             </div>
                         </div>
                         <div class="col-sm-4">
                             <div class="card bg-soft-warning border-0 shadow-sm">
                                 <div class="card-body text-center py-3">
-                                    <div class="text-muted small text-uppercase fw-semibold tracking-wide">Pendiente</div>
+                                    <div class="text-muted small text-uppercase fw-semibold tracking-wide">Pendiente Efectivo</div>
                                     <div class="display-6 fw-bold text-warning mt-1" id="cpDeudaPendienteLabel">$0.00</div>
+                                    <small class="text-muted mt-1" id="cpDeudaDescuentoLabel" style="display:none">
+                                        <i class="bx bx-info-circle me-1"></i>Desc. ganancia: -<span id="cpDeudaDescuentoMonto">$0.00</span>
+                                    </small>
                                 </div>
                             </div>
                         </div>
@@ -207,6 +210,7 @@
                                     <th>Monto</th>
                                     <th>Pagado</th>
                                     <th>Pendiente</th>
+                                    <th>Ganancia</th>
                                     <th>Estatus</th>
                                 </tr>
                             </thead>
@@ -215,12 +219,10 @@
                     </div>
                     <!-- Comprobantes -->
                     <div class="mt-3" id="cpDeudaCompSection">
-                        <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="d-flex align-items-center gap-2 mb-2" data-bs-toggle="collapse" data-bs-target="#cpDeudaCompList" aria-expanded="false" style="cursor:pointer">
                             <h6 class="fw-semibold mb-0"><i class="bx bx-receipt me-1 text-muted"></i>Comprobantes</h6>
                             <span class="badge bg-primary rounded-pill" id="cpDeudaCompCount">0</span>
-                            <button class="btn btn-sm btn-link text-decoration-none p-0 ms-auto" type="button" id="cpDeudaCompToggle" data-bs-toggle="collapse" data-bs-target="#cpDeudaCompList" aria-expanded="false">
-                                <i class="bx bx-chevron-down fs-5"></i>
-                            </button>
+                            <i class="bx bx-chevron-down fs-5 ms-auto"></i>
                         </div>
                         <div class="collapse" id="cpDeudaCompList">
                             <div class="table-responsive" style="max-height:250px;overflow-y:auto">
@@ -239,6 +241,29 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Premios -->
+                    <div class="mt-3" id="cpDeudaPremiosSection">
+                        <div class="d-flex align-items-center gap-2 mb-2" data-bs-toggle="collapse" data-bs-target="#cpDeudaPremiosList" aria-expanded="false" style="cursor:pointer">
+                            <h6 class="fw-semibold mb-0"><i class="bx bx-gift me-1 text-muted"></i>Premios Solicitados</h6>
+                            <span class="badge bg-warning text-dark rounded-pill" id="cpDeudaPremiosCount">0</span>
+                            <i class="bx bx-chevron-down fs-5 ms-auto"></i>
+                        </div>
+                        <div class="collapse" id="cpDeudaPremiosList">
+                            <div class="table-responsive" style="max-height:250px;overflow-y:auto">
+                                <table class="table table-sm table-hover mb-0 border">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Premio</th>
+                                            <th>Valor</th>
+                                            <th>Estatus</th>
+                                            <th>Fecha</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cpDeudaPremiosBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer border-0">
@@ -253,6 +278,78 @@
     <a class="dropdown-item py-2" href="#" id="cpDropPago"><i class="bx bx-dollar-circle me-2 text-success"></i>Cargar pago</a>
     <hr class="dropdown-divider my-1">
     <a class="dropdown-item py-2" href="#" id="cpDropDeuda"><i class="bx bx-bar-chart-alt-2 me-2 text-primary"></i>Estatus de deuda</a>
+    <hr class="dropdown-divider my-1">
+    <a class="dropdown-item py-2" href="#" id="cpDropPremio"><i class="bx bx-gift me-2" style="color: #a594f9"></i>Solicitud de premio</a>
+</div>
+
+<!-- Modal Solicitud de Premio -->
+<div class="modal fade" id="cpPremioModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="bx bx-gift me-2"></i>Solicitud de Premio
+                </h5>
+                <button type="button" class="btn-close btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="cpPremioForm">
+                <input type="hidden" name="vendedor_id" id="cpPremioVendedorId">
+                <input type="hidden" name="empresa_id" id="cpPremioEmpresaId">
+                <input type="hidden" name="temporada_id" id="cpPremioTempId">
+                <div class="modal-body pt-4">
+                    <div id="cpPremioLoading" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="text-muted mt-2 mb-0">Cargando información del vendedor...</p>
+                    </div>
+                    <div id="cpPremioContent" style="display:none">
+
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="avatar-sm bg-soft-primary rounded-circle text-primary d-flex justify-content-center align-items-center me-3" style="width: 48px; height: 48px;">
+                                <i class="bx bx-user fs-3"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold" id="cpPremioVendedorNombre">Nombre Vendedor</h6>
+                                <small class="text-muted" id="cpPremioEmpresaNombre">Empresa</small>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-6">
+                                <div class="card bg-soft-success border-0 shadow-none rounded-3 h-100">
+                                    <div class="card-body p-3 text-center">
+                                        <div class="text-muted small fw-semibold text-uppercase mb-1">Ganancia Disp.</div>
+                                        <div class="fs-4 fw-bold text-success" id="cpPremioGananciaTotal">$0.00</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card bg-soft-info border-0 shadow-none rounded-3 h-100">
+                                    <div class="card-body p-3 text-center">
+                                        <div class="text-muted small fw-semibold text-uppercase mb-1">Asignaciones</div>
+                                        <div class="fs-4 fw-bold text-info" id="cpPremioAsignaciones">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Seleccionar Premio</label>
+                            <select class="form-select form-select-lg" name="premio_id" id="cpPremioSelect" required style="border-radius: 8px;">
+                                <option value="">Seleccione un premio...</option>
+                            </select>
+                            <div id="cpPremioWarning" class="form-text text-danger mt-2" style="display:none;">
+                                <i class="bx bx-error-circle me-1"></i>El valor del premio supera la ganancia disponible.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 bg-light" id="cpPremioFooter" style="display:none;">
+                    <button type="button" class="btn btn-light shadow-sm" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary shadow-sm" id="cpPremioSubmitBtn" style="border-radius: 8px; background: linear-gradient(135deg, #7367f0 0%, #a594f9 100%); border: none;">Asignar Premio</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -327,6 +424,10 @@
 
     .dropdown-item:active {
         background: #7367f0;
+    }
+
+    #cpAbonoPreviewBody tr:not(.table-success):not(.table-warning) td {
+        vertical-align: middle;
     }
 </style>
 
@@ -531,6 +632,15 @@
             const filas = _agrupado ? agruparPorVendedor(_allRows) : _allRows;
             renderizar(filtrarLocal(filas));
         });
+
+        // Inject cedula from URL query param
+        const cedula = new URLSearchParams(window.location.search).get('cedula');
+        if (cedula) {
+            document.getElementById('buscador').value = cedula;
+            // Re-filter after data loads
+            const filas = _agrupado ? agruparPorVendedor(_allRows) : _allRows;
+            renderizar(filtrarLocal(filas));
+        }
     }
 
     // ============ Custom Dropdown ============
@@ -570,6 +680,122 @@
         verDeuda(btn, _cpVendorActivo);
     });
 
+    document.getElementById('cpDropPremio').addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('cpDropMenu').style.display = 'none';
+        const btn = _cpBtnActivo;
+        if (!btn) return;
+        abrirPremio(btn, _cpVendorActivo);
+    });
+
+    // ============ Solicitud de Premio ============
+    let _cpPremioGananciaActual = 0;
+
+    function abrirPremio(btn, vendedorId) {
+        const empresaId = document.getElementById('empresa').value;
+        const tempId = document.getElementById('campaniaSelect').value;
+
+        document.getElementById('cpPremioVendedorId').value = vendedorId;
+        document.getElementById('cpPremioEmpresaId').value = empresaId;
+        document.getElementById('cpPremioTempId').value = tempId;
+
+        document.getElementById('cpPremioLoading').style.display = '';
+        document.getElementById('cpPremioContent').style.display = 'none';
+        document.getElementById('cpPremioFooter').style.display = 'none';
+
+        const modal = new bootstrap.Modal(document.getElementById('cpPremioModal'));
+        modal.show();
+
+        fetch(`${BASE}api/control-pagos/premio-info?empresa_id=${empresaId}&temporada_id=${tempId}&vendedor_id=${vendedorId}`)
+            .then(r => r.json())
+            .then(json => {
+                if (!json.value) {
+                    document.getElementById('cpPremioLoading').innerHTML = '<p class="text-danger">' + (json.message || 'Error al cargar') + '</p>';
+                    return;
+                }
+                const d = json.data;
+                _cpPremioGananciaActual = parseFloat(d.ganancia_total) || 0;
+
+                document.getElementById('cpPremioVendedorNombre').textContent = d.vendedor_nombre || 'Desconocido';
+                document.getElementById('cpPremioEmpresaNombre').textContent = d.empresa_nombre || 'Empresa';
+                document.getElementById('cpPremioGananciaTotal').textContent = '$' + _cpPremioGananciaActual.toFixed(2);
+                document.getElementById('cpPremioAsignaciones').textContent = d.total_asignaciones;
+
+                const select = document.getElementById('cpPremioSelect');
+                select.innerHTML = '<option value="">Seleccione un premio...</option>';
+                (d.premios || []).forEach(p => {
+                    select.innerHTML += `<option value="${p.id}" data-valor="${p.valor}">${p.nombre} ($${parseFloat(p.valor).toFixed(2)})</option>`;
+                });
+
+                // Reset validations
+                select.value = '';
+                document.getElementById('cpPremioWarning').style.display = 'none';
+                document.getElementById('cpPremioSubmitBtn').disabled = false;
+
+                document.getElementById('cpPremioLoading').style.display = 'none';
+                document.getElementById('cpPremioContent').style.display = '';
+                document.getElementById('cpPremioFooter').style.display = '';
+            })
+            .catch(() => {
+                document.getElementById('cpPremioLoading').innerHTML = '<p class="text-danger">Error de conexión.</p>';
+            });
+    }
+
+    document.getElementById('cpPremioSelect').addEventListener('change', function() {
+        const option = this.options[this.selectedIndex];
+        if (!option.value) {
+            document.getElementById('cpPremioWarning').style.display = 'none';
+            document.getElementById('cpPremioSubmitBtn').disabled = false;
+            return;
+        }
+        const valorPremio = parseFloat(option.getAttribute('data-valor')) || 0;
+        if (valorPremio > _cpPremioGananciaActual) {
+            document.getElementById('cpPremioWarning').style.display = '';
+            document.getElementById('cpPremioSubmitBtn').disabled = true;
+        } else {
+            document.getElementById('cpPremioWarning').style.display = 'none';
+            document.getElementById('cpPremioSubmitBtn').disabled = false;
+        }
+    });
+
+    document.getElementById('cpPremioForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const fd = new FormData(this);
+        const btn = document.getElementById('cpPremioSubmitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...';
+
+        try {
+            const res = await fetch(BASE + 'api/control-pagos/solicitar-premio', {
+                method: 'POST',
+                body: fd
+            });
+            const json = await res.json();
+            if (json.value) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Premio asignado',
+                    text: 'La ganancia ha sido descontada exitosamente.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                bootstrap.Modal.getInstance(document.getElementById('cpPremioModal')).hide();
+                cargarTabla();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: json.message
+                });
+            }
+        } catch (e) {
+            Swal.fire('Error', 'Problema de red o servidor.', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Asignar Premio';
+        }
+    });
+
     // ============ Cargar Pago ============
 
     function abrirPago(btn, vendedorId) {
@@ -593,8 +819,11 @@
             .then(json => {
                 const cuotas = json.data?.cuotas || [];
                 const deudaTotal = json.data?.deuda_total || 0;
+                const deudaEfectiva = json.data?.deuda_efectiva ?? deudaTotal;
                 _cpCuotas = cuotas;
-                document.getElementById('cpDeudaTotal').textContent = '$' + deudaTotal.toFixed(2);
+                const descuento = deudaTotal - deudaEfectiva;
+                document.getElementById('cpDeudaTotal').innerHTML = '$' + deudaEfectiva.toFixed(2) +
+                    (descuento > 0 ? ` <small class="text-success fw-normal">(Desc. -$${descuento.toFixed(2)})</small>` : '');
 
                 const sel = document.getElementById('cpCuotaSelect');
                 sel.innerHTML = '<option value="">Seleccione cuota...</option>';
@@ -630,34 +859,52 @@
                 const total = parseFloat(d.total_deuda) || 0;
                 const pagado = parseFloat(d.total_pagado) || 0;
                 const pendiente = Math.max(0, parseFloat(d.pendiente) || 0);
+                const totalGanancia = parseFloat(d.total_ganancia_vendedor) || 0;
+                const pendienteEfectivo = d.pendiente_efectivo != null ? parseFloat(d.pendiente_efectivo) : Math.max(0, pendiente - totalGanancia);
                 const pct = total > 0 ? (pagado / total * 100) : 0;
 
                 document.getElementById('cpDeudaTotalLabel').textContent = '$' + total.toFixed(2);
                 document.getElementById('cpDeudaPagadoLabel').textContent = '$' + pagado.toFixed(2);
-                document.getElementById('cpDeudaPendienteLabel').textContent = '$' + pendiente.toFixed(2);
+                document.getElementById('cpDeudaPendienteLabel').textContent = '$' + pendienteEfectivo.toFixed(2);
+                if (totalGanancia > 0) {
+                    const descLabel = document.getElementById('cpDeudaDescuentoLabel');
+                    descLabel.style.display = '';
+                    document.getElementById('cpDeudaDescuentoMonto').textContent = totalGanancia.toFixed(2);
+                }
                 document.getElementById('cpDeudaProgresoLabel').textContent = pct.toFixed(1) + '%';
                 const barra = document.getElementById('cpDeudaBarra');
                 barra.style.width = pct + '%';
                 barra.setAttribute('aria-valuenow', pct);
                 barra.textContent = pct > 0 ? pct.toFixed(1) + '%' : '';
 
+                // Determine last cuota per asignacion_id
+                const lastCuotaPorAsignacion = {};
+                cuotas.forEach(c => {
+                    const aid = c.asignacion_id;
+                    lastCuotaPorAsignacion[aid] = c;
+                });
+
                 const tbody = document.getElementById('cpDeudaTableBody');
                 tbody.innerHTML = cuotas.map(c => {
                     const mp = parseFloat(c.monto_a_pagar) || 0;
                     const pp = parseFloat(c.monto_pagado) || 0;
                     const pe = parseFloat(c.monto_pendiente) || 0;
+                    const gv = parseFloat(c.ganancia_vendedor) || 0;
+                    const isLast = lastCuotaPorAsignacion[c.asignacion_id]?.id === c.id;
+                    const tieneDescuento = isLast && gv > 0;
                     const badgeMap = {
                         realizado: '<span class="badge bg-success" title="REALIZADO">R</span>',
                         pendiente: '<span class="badge bg-secondary" title="PENDIENTE">P</span>',
                         vencido: '<span class="badge bg-danger" title="VENCIDO">V</span>',
                         dentro_de_margen: '<span class="badge bg-warning text-dark" title="MARGEN DE PAGO">M</span>',
                     };
-                    return `<tr>
+                    return `<tr${tieneDescuento ? ' class="table-info"' : ''}>
                         <td class="fw-medium">${c.numero_cuota}</td>
                         <td>${c.coleccion_nombre || ''}</td>
                         <td>$${mp.toFixed(2)}</td>
                         <td>$${pp.toFixed(2)}</td>
-                        <td>$${pe.toFixed(2)}</td>
+                        <td>$${pe.toFixed(2)}${tieneDescuento ? `<br><small class="text-primary fw-bold">Efectivo: $${Math.max(0, pe - gv).toFixed(2)}</small>` : ''}</td>
+                        <td>${tieneDescuento ? `<span class="badge bg-info text-dark">-$${gv.toFixed(2)}</span>` : '<span class="text-muted">—</span>'}</td>
                         <td>${badgeMap[c.estatus_pago] || c.estatus_pago}</td>
                     </tr>`;
                 }).join('');
@@ -683,6 +930,25 @@
                     compBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">Sin comprobantes registrados.</td></tr>';
                 }
 
+                // Premios
+                const premios = d.premios || [];
+                document.getElementById('cpDeudaPremiosCount').textContent = premios.length;
+                const premiosBody = document.getElementById('cpDeudaPremiosBody');
+                if (premios.length) {
+                    premiosBody.innerHTML = premios.map(pr => {
+                        const fecha = pr.created_at ? pr.created_at.slice(0, 10) : '—';
+                        const badgeClass = pr.status === 'entregado' ? 'bg-success' : 'bg-secondary';
+                        return `<tr>
+                            <td class="fw-medium">${pr.nombre || '—'}</td>
+                            <td>$${parseFloat(pr.valor || 0).toFixed(2)}</td>
+                            <td><span class="badge ${badgeClass} text-uppercase">${pr.status || 'solicitado'}</span></td>
+                            <td class="text-nowrap">${fecha}</td>
+                        </tr>`;
+                    }).join('');
+                } else {
+                    premiosBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-2">Sin premios asignados.</td></tr>';
+                }
+
                 document.getElementById('cpDeudaLoading').style.display = 'none';
                 document.getElementById('cpDeudaContent').style.display = '';
             })
@@ -702,39 +968,114 @@
         preview.style.display = '';
         tbody.innerHTML = '';
 
-        const cuotas = _cpCuotas.filter(c => c.estatus_pago !== 'realizado')
-            .sort((a, b) => a.fecha_pago.localeCompare(b.fecha_pago));
+        // Group by asignacion
+        const grupos = {};
+        _cpCuotas.filter(c => c.estatus_pago !== 'realizado').forEach(c => {
+            const aid = c.asignacion_id;
+            if (!grupos[aid]) grupos[aid] = {
+                coleccion: c.coleccion_nombre || '',
+                cuotas: []
+            };
+            grupos[aid].cuotas.push(c);
+        });
+
+        // Sort groups by earliest fecha_pago, then cuotas within each group
+        Object.values(grupos).forEach(g => g.cuotas.sort((a, b) => a.fecha_pago.localeCompare(b.fecha_pago)));
+        const gruposOrd = Object.values(grupos).sort((a, b) => a.cuotas[0].fecha_pago.localeCompare(b.cuotas[0].fecha_pago));
+
+        // Last cuota per asignacion (for discount)
+        const lastByAsig = {};
+        Object.values(grupos).forEach(g => {
+            const cs = g.cuotas;
+            lastByAsig[cs[0].asignacion_id] = cs[cs.length - 1];
+        });
 
         let restante = monto;
+        let totalEfectivo = 0;
         let rows = '';
-        cuotas.forEach(c => {
-            const pendiente = parseFloat(c.monto_pendiente || 0);
-            let pagadoAhora, resultado, clase;
-            if (restante <= 0) {
-                pagadoAhora = 0;
-                resultado = 'Sin cambios';
-                clase = '';
-            } else if (restante >= pendiente) {
-                pagadoAhora = pendiente;
-                resultado = 'Pagado';
-                clase = 'text-success fw-bold';
-                restante -= pendiente;
-            } else {
-                pagadoAhora = restante;
-                resultado = 'Parcial';
-                clase = 'text-warning fw-bold';
-                restante = 0;
-            }
-            rows += `<tr${clase ? ' class="' + clase + '"' : ''}>
-                <td>${c.numero_cuota}</td>
-                <td>${c.fecha_pago}</td>
-                <td>${c.coleccion_nombre || ''}</td>
-                <td>$${pendiente.toFixed(2)}</td>
-                <td>$${(pendiente - pagadoAhora).toFixed(2)}</td>
-                <td>${resultado}</td>
+
+        gruposOrd.forEach((g, gi) => {
+            const coleccionLabel = g.coleccion || 'Colección';
+
+            // Group header
+            rows += `<tr style="background:#f8f9fa;border-top:${gi > 0 ? '2px solid #dee2e6' : '0'}">
+                <td colspan="4" class="py-1">
+                    <span class="fw-semibold small"><i class="bx bx-package me-1 text-muted"></i>${coleccionLabel}</span>
+                </td>
             </tr>`;
+
+            g.cuotas.forEach(c => {
+                const pendienteReal = parseFloat(c.monto_pendiente || 0);
+                const ganancia = parseFloat(c.ganancia_vendedor || 0);
+                const esUltima = lastByAsig[c.asignacion_id]?.id === c.id;
+                const descuento = (esUltima && ganancia > 0) ? Math.min(ganancia, pendienteReal) : 0;
+                const pendienteEf = pendienteReal - descuento;
+                totalEfectivo += pendienteEf;
+
+                let pagadoAhora, resultado, rowCls;
+                if (restante <= 0) {
+                    pagadoAhora = 0;
+                    resultado = '—';
+                    rowCls = 'text-muted';
+                } else if (restante >= pendienteEf) {
+                    pagadoAhora = pendienteEf;
+                    resultado = 'Pagado';
+                    rowCls = 'table-success';
+                    restante -= pagadoAhora;
+                } else {
+                    pagadoAhora = restante;
+                    resultado = 'Parcial';
+                    rowCls = 'table-warning';
+                    restante = 0;
+                }
+
+                const pendStr = descuento > 0 ?
+                    `<span class="fw-medium"><s>$${pendienteReal.toFixed(2)}</s></span><br><span class="text-primary fw-semibold">$${pendienteEf.toFixed(2)}</span>` :
+                    `<span class="fw-medium">$${pendienteReal.toFixed(2)}</span>`;
+                const descStr = descuento > 0 ?
+                    `<span class="badge bg-info text-dark" style="font-size:.7rem">-${descuento.toFixed(2)}</span>` :
+                    '<span class="text-muted" style="font-size:.8rem">—</span>';
+                const badgeCls = resultado === 'Pagado' ? 'badge bg-success bg-gradient' : resultado === 'Parcial' ? 'badge bg-warning text-dark bg-gradient' : 'badge bg-light text-muted';
+
+                rows += `<tr class="${rowCls}">
+                    <td class="py-1"><span class="fw-medium" style="font-size:.85rem">#${c.numero_cuota}</span><br><small class="text-muted">${c.fecha_pago}</small></td>
+                    <td class="py-1">${pendStr}</td>
+                    <td class="py-1 text-center">${descStr}</td>
+                    <td class="py-1"><span class="${badgeCls}" style="font-size:.75rem">${resultado}</span></td>
+                </tr>`;
+            });
         });
+
         tbody.innerHTML = rows;
+
+        // Legend
+        const hasDiscount = [..._cpCuotas].some(c => {
+            const g = parseFloat(c.ganancia_vendedor || 0);
+            return c.estatus_pago !== 'realizado' && g > 0;
+        });
+        if (hasDiscount) {
+            tbody.innerHTML += `<tr style="background:#f8f9fa;border-top:1px solid #dee2e6">
+                <td colspan="4" class="py-1 small text-muted">
+                    <i class="bx bx-info-circle me-1"></i>Montos tachados incluyen descuento por ganancia del vendedor. El valor en <span class="text-primary fw-semibold">azul</span> es el efectivo a pagar.
+                </td>
+            </tr>`;
+        }
+
+        // Summary row at end
+        const aplicado = Math.min(parseFloat(monto) || 0, totalEfectivo);
+        const restanteDeuda = Math.max(0, totalEfectivo - aplicado);
+        tbody.innerHTML += `<tr style="border-top:2px solid #dee2e6;background:#fff">
+            <td class="py-2"><span class="fw-semibold">Total abonado</span></td>
+            <td class="py-2"></td>
+            <td class="py-2"></td>
+            <td class="py-2"><span class="fw-bold fs-6 text-primary">$${aplicado.toFixed(2)}</span></td>
+        </tr>
+        <tr style="background:#fff">
+            <td class="py-1 pb-2"><span class="text-muted">Restante por pagar</span></td>
+            <td class="py-1 pb-2"></td>
+            <td class="py-1 pb-2"></td>
+            <td class="py-1 pb-2"><span class="fw-semibold text-danger">$${restanteDeuda.toFixed(2)}</span></td>
+        </tr>`;
     }
 
     document.getElementById('cpTipoPago').addEventListener('change', function() {
@@ -751,7 +1092,7 @@
         }
         if (val === 'abono') {
             dialog.classList.add('modal-xl');
-            formCol.className = 'col-md-6';
+            formCol.className = 'col-md-5';
             preview.style.display = '';
             simularAbonoPreview(parseFloat(document.getElementById('cpMonto').value));
         } else {

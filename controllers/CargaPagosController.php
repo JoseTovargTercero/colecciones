@@ -41,9 +41,26 @@ class CargaPagosController
         }
 
         try {
+            $cuotas = $this->m->obtenerCuotasVendedor($empresa_id, $temporada_id, $vendedor_id);
+            $deudaTotal = $this->m->obtenerDeudaTotal($empresa_id, $temporada_id, $vendedor_id);
+
+            // Calcular deuda efectiva restando ganancia_vendedor de la última cuota de cada asignación
+            $lastByAsig = [];
+            foreach ($cuotas as $c) {
+                $lastByAsig[(int)$c['asignacion_id']] = $c;
+            }
+            $descuentoTotal = 0;
+            foreach ($cuotas as $c) {
+                if ($lastByAsig[(int)$c['asignacion_id']]['id'] === $c['id']) {
+                    $descuentoTotal += min((float)($c['ganancia_vendedor'] ?? 0), (float)$c['monto_pendiente']);
+                }
+            }
+            $deudaEfectiva = max(0, $deudaTotal - $descuentoTotal);
+
             $data = [
-                'cuotas' => $this->m->obtenerCuotasVendedor($empresa_id, $temporada_id, $vendedor_id),
-                'deuda_total' => $this->m->obtenerDeudaTotal($empresa_id, $temporada_id, $vendedor_id),
+                'cuotas' => $cuotas,
+                'deuda_total' => $deudaTotal,
+                'deuda_efectiva' => $deudaEfectiva,
             ];
             $this->res(true, 'OK', $data);
         } catch (Throwable $e) {
@@ -64,19 +81,31 @@ class CargaPagosController
         try {
             $cuotas = $this->m->obtenerCuotasCompletasVendedor($empresa_id, $temporada_id, $vendedor_id);
             $comprobantes = $this->m->obtenerComprobantesVendedor($empresa_id, $temporada_id, $vendedor_id);
+            $premios = $this->m->obtenerPremiosVendedor($empresa_id, $temporada_id, $vendedor_id);
             $total = 0;
             $pagado = 0;
+            $gananciaPorAsignacion = [];
             foreach ($cuotas as &$c) {
                 $total += (float)$c['monto_a_pagar'];
                 $pagado += (float)$c['monto_pagado'];
+                $asigId = (int)$c['asignacion_id'];
+                if (!isset($gananciaPorAsignacion[$asigId])) {
+                    $gananciaPorAsignacion[$asigId] = (float)($c['ganancia_vendedor'] ?? 0);
+                }
             }
             unset($c);
+            $totalGanancia = array_sum($gananciaPorAsignacion);
+            $pendiente = $total - $pagado;
+            $pendienteEfectivo = max(0, $pendiente - $totalGanancia);
             $this->res(true, 'OK', [
                 'cuotas' => $cuotas,
                 'comprobantes' => $comprobantes,
+                'premios' => $premios,
                 'total_deuda' => $total,
                 'total_pagado' => $pagado,
-                'pendiente' => $total - $pagado,
+                'pendiente' => $pendiente,
+                'total_ganancia_vendedor' => $totalGanancia,
+                'pendiente_efectivo' => $pendienteEfectivo,
             ]);
         } catch (Throwable $e) {
             $this->res(false, $e->getMessage(), null, 500);

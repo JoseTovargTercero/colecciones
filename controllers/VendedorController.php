@@ -36,4 +36,21 @@ class VendedorController {
         try { $this->res(true, 'OK', ['ok' => $this->m->eliminar($id)]); }
         catch (Throwable $e) { $this->res(false, $e->getMessage(), null, 500); }
     }
+
+    public function buscarPorCedula()
+    {
+        $q = trim($_GET['q'] ?? '');
+        if (!$q) {
+            $this->res(false, 'Indique cédula o nombre.', null, 400);
+        }
+        try {
+            $data = $this->m->buscarPorCedula($q);
+            if (!$data) {
+                $this->res(false, 'Vendedor no encontrado.', null, 404);
+            }
+            $this->res(true, 'OK', $data);
+        } catch (Throwable $e) {
+            $this->res(false, $e->getMessage(), null, 500);
+        }
+    }
 }

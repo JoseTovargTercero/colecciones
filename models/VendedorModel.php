@@ -45,4 +45,60 @@ class VendedorModel {
         $stmt->execute();
         return $stmt->affected_rows > 0;
     }
+
+    public function buscarPorCedula(string $query): ?array
+    {
+        $u = $_SESSION['user_id'] ?? '';
+
+        // Detect if query is a cédula (mostly digits) or a name
+        if (preg_match('/^[\d\.\-]+$/', $query)) {
+            $stmt = $this->db->prepare(
+                "SELECT id, nombre, cedula FROM vendedores WHERE cedula = ? AND usuario_id = ? LIMIT 1"
+            );
+            $stmt->bind_param('ss', $query, $u);
+        } else {
+            $like = '%' . $query . '%';
+            $stmt = $this->db->prepare(
+                "SELECT id, nombre, cedula FROM vendedores WHERE nombre LIKE ? AND usuario_id = ? LIMIT 1"
+            );
+            $stmt->bind_param('ss', $like, $u);
+        }
+        $stmt->execute();
+        $r = $stmt->get_result();
+        $vendedor = $r->fetch_assoc();
+        $stmt->close();
+
+        if (!$vendedor) return null;
+
+        $vid = (int)$vendedor['id'];
+
+        // Asignaciones no finalizadas agrupadas por empresa
+        $r = $this->db->query(
+            "SELECT e.id as empresa_id, e.nombre as empresa_nombre, COUNT(ac.id) as total_asignaciones
+             FROM asignaciones_colecciones ac
+             INNER JOIN colecciones_combos cc ON ac.coleccion_combo_id = cc.id
+             INNER JOIN empresas e ON cc.empresa_id = e.id
+             WHERE ac.vendedor_id = $vid AND ac.estado != 'finalizada'
+             GROUP BY e.id, e.nombre
+             ORDER BY e.nombre"
+        );
+        $asignaciones = $r ? $r->fetch_all(MYSQLI_ASSOC) : [];
+
+        // Premios solicitados no entregados agrupados por empresa
+        $r = $this->db->query(
+            "SELECT e.id as empresa_id, e.nombre as empresa_nombre, COUNT(ps.id) as total_premios
+             FROM premios_solicitados ps
+             INNER JOIN empresas e ON ps.empresa_id = e.id
+             WHERE ps.vendedor_id = $vid AND ps.status != 'entregado'
+             GROUP BY e.id, e.nombre
+             ORDER BY e.nombre"
+        );
+        $premios = $r ? $r->fetch_all(MYSQLI_ASSOC) : [];
+
+        return [
+            'vendedor' => $vendedor,
+            'asignaciones' => $asignaciones,
+            'premios' => $premios,
+        ];
+    }
 }

@@ -22,6 +22,8 @@ require_once __DIR__ . '/controllers/VendedorController.php';
 require_once __DIR__ . '/controllers/AsignacionController.php';
 require_once __DIR__ . '/controllers/ControlPagosController.php';
 require_once __DIR__ . '/controllers/CargaPagosController.php';
+require_once __DIR__ . '/controllers/PreferenciasPremiosController.php';
+require_once __DIR__ . '/controllers/DashboardController.php';
 require_once __DIR__ . '/controllers/CronController.php';
 
 
@@ -84,6 +86,8 @@ $router->group(['middleware' => LoginRequiredMiddleware::class], function ($rout
     $router->get('/vendedores', ['vista' => 'modules/vendedores_view', 'vistaData' => ['titulo' => 'Vendedores']]);
     $router->get('/asignaciones', ['vista' => 'modules/asignaciones_view', 'vistaData' => ['titulo' => 'Asignaciones']]);
     $router->get('/control_pagos', ['vista' => 'modules/control_pagos_view', 'vistaData' => ['titulo' => 'Control de pagos']]);
+    $router->get('/preferencias-premios', ['vista' => 'modules/preferencias_premios_view', 'vistaData' => ['titulo' => 'Preferencias de Premios']]);
+    $router->get('/dashboard', ['vista' => 'modules/dashboard_view', 'vistaData' => ['titulo' => 'Dashboard']]);
 });
 
 
@@ -150,6 +154,7 @@ $router->group(['prefix' => '/api'], function ($router) {
 
     // endpoints de vendedores
     $router->get('/vendedores', ['controlador' => VendedorController::class, 'accion' => 'listar']);
+    $router->get('/vendedores/buscar', ['controlador' => VendedorController::class, 'accion' => 'buscarPorCedula']);
     $router->post('/vendedores', ['controlador' => VendedorController::class, 'accion' => 'crear']);
     $router->post('/vendedores/{id}', ['controlador' => VendedorController::class, 'accion' => 'actualizar']);
     $router->delete('/vendedores/{id}', ['controlador' => VendedorController::class, 'accion' => 'eliminar']);
@@ -162,9 +167,18 @@ $router->group(['prefix' => '/api'], function ($router) {
 
     // control-pagos
     $router->get('/control-pagos', ['controlador' => ControlPagosController::class, 'accion' => 'listar']);
+    $router->get('/control-pagos/premio-info', ['controlador' => ControlPagosController::class, 'accion' => 'premioInfo']);
+    $router->post('/control-pagos/solicitar-premio', ['controlador' => ControlPagosController::class, 'accion' => 'solicitarPremio']);
     $router->post('/cargar-pago', ['controlador' => CargaPagosController::class, 'accion' => 'procesar']);
     $router->get('/cargar-pago/cuotas', ['controlador' => CargaPagosController::class, 'accion' => 'cuotas']);
     $router->get('/cargar-pago/deuda', ['controlador' => CargaPagosController::class, 'accion' => 'deuda']);
+
+    // preferencias-premios
+    $router->get('/preferencias-premios', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'listar']);
+    $router->post('/preferencias-premios/{id}/entregar', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'entregar']);
+
+    // dashboard
+    $router->get('/dashboard/kpis', ['controlador' => DashboardController::class, 'accion' => 'kpis']);
 
     // endpoints de alertas
     $router->get('/alertas', ['controlador' => AlertaController::class, 'accion' => 'listar']);

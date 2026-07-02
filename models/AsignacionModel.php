@@ -81,7 +81,7 @@ class AsignacionModel
                  (vendedor_id, coleccion_combo_id, temporada_id, estado, aplica_premio_especial, fecha_asignacion, usuario_id, costo, ganancia_vendedor, ganancia_gerente)
                  VALUES (?, ?, ?, 'activa', 0, ?, ?, ?, ?, ?)"
             );
-            $stmt->bind_param('iiisssss', $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $u, $precio_venta_vendedor, $ganancia_vendedor, $ganancia_gerente);
+            $stmt->bind_param('iiissddd', $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $u, $precio_venta_vendedor, $ganancia_vendedor, $ganancia_gerente);
 
             $stmt2 = $this->db->prepare(
                 "INSERT INTO cuotas_coleccion
@@ -103,7 +103,7 @@ class AsignacionModel
                     $monto         = (float)$c['monto'];
                     $fecha_pago    = $c['fecha_pago'];
 
-                    $stmt2->bind_param('iidddsss', $asignacion_id, $num, $porcentaje, $monto, $monto, $fecha_pago, $u);
+                    $stmt2->bind_param('iidddss', $asignacion_id, $num, $porcentaje, $monto, $monto, $fecha_pago, $u);
                     $stmt2->execute();
                 }
             }

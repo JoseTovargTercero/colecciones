@@ -93,4 +93,104 @@ class ControlPagosModel
             'dias_retraso_permitido'   => $diasRetraso ?? 3,
         ];
     }
+
+    public function getPremioInfo($vendedor_id, $empresa_id, $temporada_id)
+    {
+        // 1. Obtener total ganancias y cantidad de asignaciones activas
+        $stmt = $this->db->prepare("SELECT COUNT(*) as total_asignaciones, SUM(ganancia_vendedor) as ganancia_total FROM asignaciones_colecciones WHERE vendedor_id = ? AND temporada_id = ? AND estado = 'activa' AND coleccion_combo_id IN (SELECT id FROM colecciones_combos WHERE empresa_id = ?)");
+        $stmt->bind_param('sss', $vendedor_id, $temporada_id, $empresa_id);
+        $stmt->execute();
+        $r = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        // 2. Obtener vendedor y empresa
+        $stmt = $this->db->prepare("SELECT nombre FROM vendedores WHERE id = ?");
+        $stmt->bind_param('s', $vendedor_id);
+        $stmt->execute();
+        $vendedor_nombre = $stmt->get_result()->fetch_assoc()['nombre'] ?? '';
+        $stmt->close();
+
+        $stmt = $this->db->prepare("SELECT nombre FROM empresas WHERE id = ?");
+        $stmt->bind_param('s', $empresa_id);
+        $stmt->execute();
+        $empresa_nombre = $stmt->get_result()->fetch_assoc()['nombre'] ?? '';
+        $stmt->close();
+
+        // 3. Obtener premios
+        $stmt = $this->db->prepare("SELECT id, nombre, foto, valor FROM premios WHERE empresa_id = ?");
+        $stmt->bind_param('s', $empresa_id);
+        $stmt->execute();
+        $premios = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        return [
+            'total_asignaciones' => (int)($r['total_asignaciones'] ?? 0),
+            'ganancia_total' => (float)($r['ganancia_total'] ?? 0),
+            'vendedor_nombre' => $vendedor_nombre,
+            'empresa_nombre' => $empresa_nombre,
+            'premios' => $premios
+        ];
+    }
+
+    public function solicitarPremio($vendedor_id, $empresa_id, $temporada_id, $premio_id, $u)
+    {
+
+        $this->db->begin_transaction();
+        try {
+            // 1. Obtener valor del premio
+            $stmt = $this->db->prepare("SELECT valor FROM premios WHERE id = ?");
+            $stmt->bind_param('s', $premio_id);
+            $stmt->execute();
+            $p = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+
+            if (!$p) throw new Exception("Premio no encontrado.");
+            $valor_premio = (float)$p['valor'];
+
+            // 2. Obtener asignaciones activas ordenadas
+            $stmt = $this->db->prepare("SELECT id, ganancia_vendedor FROM asignaciones_colecciones WHERE vendedor_id = ? AND temporada_id = ? AND estado = 'activa' AND coleccion_combo_id IN (SELECT id FROM colecciones_combos WHERE empresa_id = ?) ORDER BY id ASC");
+            $stmt->bind_param('sss', $vendedor_id, $temporada_id, $empresa_id);
+            $stmt->execute();
+            $asignaciones = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+
+            $ganancia_total = array_sum(array_column($asignaciones, 'ganancia_vendedor'));
+
+            if ($valor_premio > $ganancia_total) {
+                throw new Exception("El valor del premio ($$valor_premio) supera la ganancia disponible ($$ganancia_total).");
+            }
+
+            // 3. Descontar progresivamente
+            $restante = $valor_premio;
+            $stmtUpdate = $this->db->prepare("UPDATE asignaciones_colecciones SET ganancia_vendedor = ? WHERE id = ?");
+            foreach ($asignaciones as $asig) {
+                if ($restante <= 0) break;
+
+                $ganancia = (float)$asig['ganancia_vendedor'];
+                if ($ganancia >= $restante) {
+                    $nueva_ganancia = $ganancia - $restante;
+                    $restante = 0;
+                } else {
+                    $restante -= $ganancia;
+                    $nueva_ganancia = 0;
+                }
+
+                $stmtUpdate->bind_param('ds', $nueva_ganancia, $asig['id']);
+                $stmtUpdate->execute();
+            }
+            $stmtUpdate->close();
+
+            // 4. Insertar en premios_solicitados
+            $stmtInsert = $this->db->prepare("INSERT INTO premios_solicitados (vendedor_id, empresa_id, temporada_id, premio_id, usuario_id) VALUES (?, ?, ?, ?, ?)");
+            $stmtInsert->bind_param('sssss', $vendedor_id, $empresa_id, $temporada_id, $premio_id, $u);
+            $stmtInsert->execute();
+            $stmtInsert->close();
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollback();
+            throw $e;
+        }
+    }
 }

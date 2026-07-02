@@ -16,15 +16,21 @@ $userType = $_SESSION['codigo'] ?? '';
 
     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
         <!-- Search -->
-        <div class="navbar-nav align-items-center">
+        <div class="navbar-nav align-items-center position-relative" id="tbSearchWrapper">
             <div class="nav-item d-flex align-items-center">
                 <i class="bx bx-search fs-4 lh-0"></i>
                 <input
                     type="text"
+                    id="tbSearchInput"
                     class="form-control border-0 shadow-none"
-                    placeholder="Buscar..."
-                    aria-label="Buscar..." />
+                    placeholder="Buscar vendedor (cédula o nombre)..."
+                    aria-label="Buscar vendedor"
+                    autocomplete="off" />
+                <button class="btn btn-sm btn-link text-muted p-0 ms-1" id="tbSearchBtn" title="Buscar" style="display:none">
+                    <i class="bx bx-search fs-5"></i>
+                </button>
             </div>
+            <div id="tbSearchResults" class="w-100 shadow-sm border-0 mt-1 p-0" style="display:none;position:absolute;top:100%;left:0;z-index:9999;border-radius:8px;max-height:400px;overflow-y:auto;background:#fff"></div>
         </div>
 
         <ul class="navbar-nav flex-row align-items-center ms-auto">
@@ -157,6 +163,86 @@ $userType = $_SESSION['codigo'] ?? '';
                 e.preventDefault();
                 document.body.classList.toggle('layout-menu-collapsed');
             });
+        });
+
+        // Search by cedula
+        const searchInput = document.getElementById('tbSearchInput');
+        const searchBtn = document.getElementById('tbSearchBtn');
+        const resultsEl = document.getElementById('tbSearchResults');
+        const BASE = '<?= rtrim(BASE_URL, '/') . '/' ?>';
+        let searchTimeout = null;
+
+        function doSearch() {
+            const q = searchInput.value.trim();
+            if (!q) { resultsEl.style.display = 'none'; return; }
+
+            resultsEl.style.display = 'block';
+            resultsEl.innerHTML = '<div class="p-3 text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>';
+
+            fetch(BASE + 'api/vendedores/buscar?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(json => {
+                    if (!json.value || !json.data) {
+                        resultsEl.innerHTML = `<div class="p-3 text-muted small text-center">${json.message || 'Sin resultados'}</div>`;
+                        resultsEl.style.display = 'block';
+                        return;
+                    }
+                    const d = json.data;
+                    const v = d.vendedor || {};
+                    const asigs = d.asignaciones || [];
+                    const premios = d.premios || [];
+
+                    // Merge empresas from both lists
+                    const empMap = {};
+                    asigs.forEach(a => { empMap[a.empresa_id] = { nombre: a.empresa_nombre, asig: parseInt(a.total_asignaciones) || 0, prem: 0 }; });
+                    premios.forEach(p => {
+                        if (empMap[p.empresa_id]) empMap[p.empresa_id].prem = parseInt(p.total_premios) || 0;
+                        else empMap[p.empresa_id] = { nombre: p.empresa_nombre, asig: 0, prem: parseInt(p.total_premios) || 0 };
+                    });
+
+                    const empresas = Object.values(empMap);
+                    let html = `<div class="p-2 border-bottom bg-light"><strong class="small">${v.nombre || 'Vendedor'}</strong> <span class="text-muted small">(${v.cedula || ''})</span></div>`;
+                    if (!empresas.length) {
+                        html += `<div class="p-3 text-muted small text-center">Sin asignaciones activas ni premios pendientes.</div>`;
+                    } else {
+                        empresas.forEach(e => {
+                            html += `<div class="px-3 py-2 border-bottom">
+                                <div class="fw-semibold small mb-1">${e.nombre}</div>
+                                <div class="d-flex gap-3 small">
+                                    <a href="${BASE}control_pagos?cedula=${encodeURIComponent(v.cedula || '')}" class="text-decoration-none">
+                                        <span class="badge bg-primary bg-gradient">${e.asig}</span> Asignaciones
+                                    </a>
+                                    <a href="${BASE}preferencias-premios?cedula=${encodeURIComponent(v.cedula || '')}" class="text-decoration-none">
+                                        <span class="badge bg-warning text-dark bg-gradient">${e.prem}</span> Premios
+                                    </a>
+                                </div>
+                            </div>`;
+                        });
+                    }
+                    resultsEl.innerHTML = html;
+                    resultsEl.style.display = 'block';
+                })
+                .catch(() => {
+                    resultsEl.innerHTML = `<div class="p-3 text-danger small text-center">Error de conexión.</div>`;
+                    resultsEl.style.display = 'block';
+                });
+        }
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            if (!this.value.trim()) { resultsEl.style.display = 'none'; return; }
+            searchTimeout = setTimeout(doSearch, 300);
+        });
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { clearTimeout(searchTimeout); doSearch(); }
+        });
+
+        // Close on click outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#tbSearchWrapper')) {
+                resultsEl.style.display = 'none';
+            }
         });
     });
 </script>
