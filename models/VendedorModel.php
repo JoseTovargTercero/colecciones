@@ -24,12 +24,11 @@ class VendedorModel {
     public function crear(array $d): string {
         $this->fill($d);
         $u = $_SESSION['user_id'] ?? '';
-        $id = UuidHelper::generateUUIDv4();
         
-        $stmt = $this->db->prepare("INSERT INTO vendedores (id, nombre, cedula, telefono, nivel, created_at, usuario_id) VALUES (?, ?, ?, ?, ?, NOW(), ?)");
-        $stmt->bind_param('ssssis', $id, $d['nombre'], $d['cedula'], $d['telefono'], $d['nivel'], $u);
+        $stmt = $this->db->prepare("INSERT INTO vendedores (nombre, cedula, telefono, nivel, created_at, usuario_id) VALUES (?, ?, ?, ?, NOW(), ?)");
+        $stmt->bind_param('sssis', $d['nombre'], $d['cedula'], $d['telefono'], $d['nivel'], $u);
         $stmt->execute();
-        return $id;
+        return (string)$this->db->insert_id;
     }
 
     public function actualizar(string $id, array $d): bool {

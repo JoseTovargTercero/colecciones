@@ -10,10 +10,14 @@ class ColeccionModel
         $this->db = Database::getInstance();
     }
 
-    public function listar(): array
+    public function listar(?string $empresa_id = null): array
     {
         $u = $_SESSION['user_id'] ?? '';
-        $r = $this->db->query("SELECT id, empresa_id, nombre, foto, precio_base, precio_venta_vendedor, ganancia_vendedor, tipo FROM colecciones_combos WHERE usuario_id='$u'");
+        $sql = "SELECT id, empresa_id, nombre, foto, precio_base, precio_venta_vendedor, ganancia_vendedor, tipo FROM colecciones_combos WHERE usuario_id='$u'";
+        if ($empresa_id) {
+            $sql .= " AND empresa_id='" . $this->db->real_escape_string($empresa_id) . "'";
+        }
+        $r = $this->db->query($sql);
         return $r ? $r->fetch_all(MYSQLI_ASSOC) : [];
     }
 

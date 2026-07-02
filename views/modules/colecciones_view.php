@@ -8,17 +8,22 @@
         </div>
     </div>
     <div class="card">
+        <div class="card-header p-0">
+            <ul class="nav nav-tabs" id="cTabs" role="tablist"></ul>
+        </div>
         <div class="card-body">
-            <table id="cTabla" class="table table-hover" data-toggle="table" data-url="<?= BASE_URL ?>api/colecciones" data-response-handler="window.c.resp" data-search="true" data-pagination="true" data-page-size="15">
+            <table id="cTabla" class="table table-hover" data-toggle="table"
+                data-url="<?= BASE_URL ?>api/colecciones"
+                data-query-params="window.c.queryParams"
+                data-response-handler="window.c.resp"
+                data-search="true" data-pagination="true" data-page-size="15">
                 <thead>
                     <tr>
                         <th data-field="foto" data-formatter="window.c.fFoto">Foto</th>
-                        <th data-field="nombre" data-sortable="true">Nombre</th>
-                        <th data-field="tipo" data-sortable="true">Tipo</th>
-                        <th data-field="precio_base" data-sortable="true" data-formatter="window.c.fVal">Precio Base</th>
-                        <th data-field="precio_venta_vendedor" data-sortable="true" data-formatter="window.c.fValV">Precio Vendedor</th>
-                        <th data-field="ganancia_vendedor" data-sortable="true" data-formatter="window.c.fVal">Ganancia Vendedor</th>
-                        <th data-field="empresa_id" data-sortable="true" data-formatter="window.c.fEmp">Empresa</th>
+                        <th data-field="nombre" data-sortable="true" data-formatter="window.c.fNombre">Nombre</th>
+                        <th data-field="precio_base" data-sortable="true" data-formatter="window.c.fVal" title="Precio Base">PB</th>
+                        <th data-field="precio_venta_vendedor" data-sortable="true" data-formatter="window.c.fValV" title="Precio Vendedor">PV</th>
+                        <th data-field="ganancia_vendedor" data-sortable="true" data-formatter="window.c.fVal" title="Ganancia Vendedor">GV</th>
                         <th data-formatter="window.c.fAcc">Acciones</th>
                     </tr>
                 </thead>
@@ -87,21 +92,50 @@
         api: '<?= BASE_URL ?>api/colecciones',
         apiE: '<?= BASE_URL ?>api/empresas',
         emps: [],
-        resp: (res) => ({ rows: res.data || [], total: res.data?.length || 0 }),
+        currentEmpresa: '',
+        resp: (res) => ({
+            rows: res.data || [],
+            total: res.data?.length || 0
+        }),
+        queryParams: (p) => {
+            if (window.c.currentEmpresa) p.empresa_id = window.c.currentEmpresa;
+            return p;
+        },
         fFoto: (v) => v ? `<img src="<?= BASE_URL ?>${v}" width="50">` : 'Sin foto',
+        fNombre: (v, x) => `${v}<br><span class="badge bg-${x.tipo=='combo'?'info':'success'}">${x.tipo}</span>`,
         fVal: (v) => `$${v}`,
         fValV: (v, x) => `$${x.tipo=='combo'?x.precio_base:v}`,
-        fEmp: (v) => window.c.emps.find(e=>e.id==v)?.nombre || '',
         fAcc: (v, x) => {
             let xJ = JSON.stringify(x).replace(/'/g, "&apos;");
             return `<button class="btn btn-sm btn-info" onclick='window.c.edit(${xJ})'>Editar</button>
                     <button class="btn btn-sm btn-danger" onclick="window.c.del('${x.id}')">Borrar</button>`;
         },
+        load(empresaId) {
+            if (empresaId !== undefined) this.currentEmpresa = empresaId;
+            $('#cTabla').bootstrapTable('refresh');
+        },
+        initTabs() {
+            const ul = document.getElementById('cTabs');
+            let html = `<li class="nav-item"><a class="nav-link active" data-empresa="" href="#">Todas</a></li>`;
+            this.emps.forEach(e => {
+                html += `<li class="nav-item"><a class="nav-link" data-empresa="${e.id}" href="#">${e.nombre}</a></li>`;
+            });
+            ul.innerHTML = html;
+            ul.querySelectorAll('.nav-link').forEach(el => {
+                el.addEventListener('click', (ev) => {
+                    ev.preventDefault();
+                    ul.querySelector('.nav-link.active')?.classList.remove('active');
+                    el.classList.add('active');
+                    this.load(el.getAttribute('data-empresa'));
+                });
+            });
+        },
         init() {
-            fetch(this.apiE).then(r=>r.json()).then(d=>{
-                this.emps=d.data||[];
-                $('#cEmp').html('<option value="">Empresa...</option>'+this.emps.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join(''));
-                $('#cTabla').bootstrapTable('refresh');
+            fetch(this.apiE).then(r => r.json()).then(d => {
+                this.emps = d.data || [];
+                $('#cEmp').html('<option value="">Empresa...</option>' + this.emps.map(e => `<option value="${e.id}">${e.nombre}</option>`).join(''));
+                this.initTabs();
+                this.load();
             });
         },
         tg() {
@@ -120,7 +154,13 @@
             if (document.getElementById('cFotoActual')) document.getElementById('cFotoActual').value = '';
 
             const cEmp = document.getElementById('cEmp');
-            if (cEmp) cEmp.disabled = false;
+            if (cEmp) {
+                cEmp.disabled = false;
+                const active = document.querySelector('#cTabs .nav-link.active');
+                if (active && active.getAttribute('data-empresa')) {
+                    cEmp.value = active.getAttribute('data-empresa');
+                }
+            }
 
             this.tg();
             new bootstrap.Modal(document.getElementById('cModal')).show();

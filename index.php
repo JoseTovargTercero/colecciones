@@ -20,6 +20,9 @@ require_once __DIR__ . '/controllers/ColeccionController.php';
 require_once __DIR__ . '/controllers/PremioController.php';
 require_once __DIR__ . '/controllers/VendedorController.php';
 require_once __DIR__ . '/controllers/AsignacionController.php';
+require_once __DIR__ . '/controllers/ControlPagosController.php';
+require_once __DIR__ . '/controllers/CargaPagosController.php';
+require_once __DIR__ . '/controllers/CronController.php';
 
 
 use App\Core\ViewRenderer;
@@ -80,6 +83,7 @@ $router->group(['middleware' => LoginRequiredMiddleware::class], function ($rout
     $router->get('/premios', ['vista' => 'modules/premios_view', 'vistaData' => ['titulo' => 'Premios']]);
     $router->get('/vendedores', ['vista' => 'modules/vendedores_view', 'vistaData' => ['titulo' => 'Vendedores']]);
     $router->get('/asignaciones', ['vista' => 'modules/asignaciones_view', 'vistaData' => ['titulo' => 'Asignaciones']]);
+    $router->get('/control_pagos', ['vista' => 'modules/control_pagos_view', 'vistaData' => ['titulo' => 'Control de pagos']]);
 });
 
 
@@ -156,6 +160,12 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->delete('/asignaciones/{id}', ['controlador' => AsignacionController::class, 'accion' => 'eliminar']);
     $router->get('/asignaciones/{id}/cuotas', ['controlador' => AsignacionController::class, 'accion' => 'cuotas']);
 
+    // control-pagos
+    $router->get('/control-pagos', ['controlador' => ControlPagosController::class, 'accion' => 'listar']);
+    $router->post('/cargar-pago', ['controlador' => CargaPagosController::class, 'accion' => 'procesar']);
+    $router->get('/cargar-pago/cuotas', ['controlador' => CargaPagosController::class, 'accion' => 'cuotas']);
+    $router->get('/cargar-pago/deuda', ['controlador' => CargaPagosController::class, 'accion' => 'deuda']);
+
     // endpoints de alertas
     $router->get('/alertas', ['controlador' => AlertaController::class, 'accion' => 'listar']);
     $router->get('/alertas/{alerta_id}', ['controlador' => AlertaController::class, 'accion' => 'mostrar']);
@@ -177,6 +187,9 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/notifications/marcar_todas_leidas', ['controlador' => NotificationController::class, 'accion' => 'marcarTodasComoLeidas']);
 });
 
+
+// Ruta pública para cron (sin middleware, accesible sin sesión)
+$router->get('/api/cron/actualizar-estatus', ['controlador' => CronController::class, 'accion' => 'actualizarEstatus']);
 
 // --- Ejecutar el Router ---
 $router->route();

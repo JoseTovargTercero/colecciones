@@ -4,17 +4,25 @@
         <button class="btn btn-primary" onclick="window.p.add()">+ Nuevo</button>
     </div></div></div>
     
-    <div class="card"><div class="card-body">
-        <table id="pTabla" class="table table-hover" data-toggle="table" data-url="<?= BASE_URL ?>api/premios" data-response-handler="window.p.resp" data-search="true" data-pagination="true" data-page-size="15">
-            <thead><tr>
-                <th data-field="foto" data-formatter="window.p.fFoto">Foto</th>
-                <th data-field="nombre" data-sortable="true">Nombre</th>
-                <th data-field="valor" data-sortable="true" data-formatter="window.p.fVal">Valor</th>
-                <th data-field="empresa_nombre" data-sortable="true">Empresa</th>
-                <th data-formatter="window.p.fAcc">Acciones</th>
-            </tr></thead>
-        </table>
-    </div></div>
+    <div class="card">
+        <div class="card-header p-0">
+            <ul class="nav nav-tabs" id="pTabs" role="tablist"></ul>
+        </div>
+        <div class="card-body">
+            <table id="pTabla" class="table table-hover" data-toggle="table"
+                data-url="<?= BASE_URL ?>api/premios"
+                data-query-params="window.p.queryParams"
+                data-response-handler="window.p.resp"
+                data-search="true" data-pagination="true" data-page-size="15">
+                <thead><tr>
+                    <th data-field="foto" data-formatter="window.p.fFoto">Foto</th>
+                    <th data-field="nombre" data-sortable="true">Nombre</th>
+                    <th data-field="valor" data-sortable="true" data-formatter="window.p.fVal">Valor</th>
+                    <th data-formatter="window.p.fAcc">Acciones</th>
+                </tr></thead>
+            </table>
+        </div>
+    </div>
 </div>
 
 <div class="modal fade" id="pModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
@@ -50,7 +58,12 @@ window.p = {
     api: '<?= BASE_URL ?>api/premios',
     apiE: '<?= BASE_URL ?>api/empresas',
     emps: [],
+    currentEmpresa: '',
     resp: (res) => ({ rows: res.data || [], total: res.data?.length || 0 }),
+    queryParams: (p) => {
+        if (window.p.currentEmpresa) p.empresa_id = window.p.currentEmpresa;
+        return p;
+    },
     fFoto: (v) => v ? `<img src="<?= BASE_URL ?>${v}" width="50">` : 'Sin foto',
     fVal: (v) => `$${v}`,
     fAcc: (v, x) => {
@@ -58,12 +71,34 @@ window.p = {
         return `<button class="btn btn-sm btn-info" onclick='window.p.edit(${xJ})'>Editar</button>
                 <button class="btn btn-sm btn-danger" onclick="window.p.del('${x.id}')">Borrar</button>`;
     },
+    load(empresaId) {
+        if (empresaId !== undefined) this.currentEmpresa = empresaId;
+        $('#pTabla').bootstrapTable('refresh');
+    },
+    initTabs() {
+        const ul = document.getElementById('pTabs');
+        let html = `<li class="nav-item"><a class="nav-link active" data-empresa="" href="#">Todas</a></li>`;
+        this.emps.forEach(e => {
+            html += `<li class="nav-item"><a class="nav-link" data-empresa="${e.id}" href="#">${e.nombre}</a></li>`;
+        });
+        ul.innerHTML = html;
+        ul.querySelectorAll('.nav-link').forEach(el => {
+            el.addEventListener('click', (ev) => {
+                ev.preventDefault();
+                ul.querySelector('.nav-link.active')?.classList.remove('active');
+                el.classList.add('active');
+                this.load(el.getAttribute('data-empresa'));
+            });
+        });
+    },
     init() {
         fetch(this.apiE).then(r=>r.json()).then(d=>{
             this.emps=d.data||[];
             let s = '<option value="">Empresa...</option>';
             this.emps.forEach(e => s += `<option value="${e.id}">${e.nombre}</option>`);
             document.getElementById('pEmp').innerHTML = s;
+            this.initTabs();
+            this.load();
         });
     },
     add() {
@@ -71,6 +106,10 @@ window.p = {
         document.getElementById('pId').value = '';
         document.getElementById('pFotoActual').value = '';
         document.getElementById('pEmp').disabled = false;
+        const active = document.querySelector('#pTabs .nav-link.active');
+        if (active && active.getAttribute('data-empresa')) {
+            document.getElementById('pEmp').value = active.getAttribute('data-empresa');
+        }
         new bootstrap.Modal(document.getElementById('pModal')).show();
     },
     edit(x) {
@@ -96,12 +135,12 @@ window.p = {
 
         await fetch(this.api+(i?'/'+i:''), {method:'POST', body:fd});
         bootstrap.Modal.getInstance(document.getElementById('pModal')).hide();
-        $('#pTabla').bootstrapTable('refresh');
+        this.load();
     },
     async del(i) {
         if(!confirm('¿Borrar?')) return;
         await fetch(this.api+'/'+i, {method:'DELETE'});
-        $('#pTabla').bootstrapTable('refresh');
+        this.load();
     }
 };
 document.addEventListener('DOMContentLoaded', () => window.p.init());

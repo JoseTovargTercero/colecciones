@@ -11,7 +11,10 @@ class AsignacionController {
     }
 
     public function listar() {
-        try { $this->res(true, 'OK', $this->m->listar()); }
+        try {
+            $empresa_id = $_GET['empresa_id'] ?? null;
+            $this->res(true, 'OK', $this->m->listar($empresa_id));
+        }
         catch (Throwable $e) { $this->res(false, $e->getMessage(), null, 500); }
     }
 

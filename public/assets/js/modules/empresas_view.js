@@ -49,6 +49,7 @@ const abrirModal = (row = {}) => {
   document.getElementById('empresaNombre').value    = row.nombre || '';
   document.getElementById('empresaTelefono').value  = row.telefono || '';
   document.getElementById('empresaCuotas').value    = row.cantidad_cuotas || '';
+  document.getElementById('empresaDiasRetraso').value = row.dias_retraso_permitido ?? 0;
   renderCuotas(row.cantidad_cuotas || 0, row.cuotas || []);
   document.getElementById('modalEmpresaLabel').textContent = row.id ? 'Editar Empresa' : 'Nueva Empresa';
   modal().show();
@@ -120,7 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
       nombre:   document.getElementById('empresaNombre').value.trim(),
       telefono: document.getElementById('empresaTelefono').value.trim(),
       cantidad_cuotas: parseInt(document.getElementById('empresaCuotas').value) || 0,
-      cuotas: cuotas
+      cuotas: cuotas,
+      dias_retraso_permitido: parseInt(document.getElementById('empresaDiasRetraso').value) || 0
     };
     const url    = id ? api(`empresas/${id}`) : api('empresas');
     const method = 'POST';

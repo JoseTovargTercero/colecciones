@@ -63,6 +63,11 @@
                         <input type="number" class="form-control" id="empresaCuotas" min="1" max="24" required>
                     </div>
                     <div id="cuotasContainer" class="row"></div>
+                    <hr>
+                    <div class="mb-3">
+                        <label for="empresaDiasRetraso" class="form-label">Días de retraso permitidos</label>
+                        <input type="number" class="form-control" id="empresaDiasRetraso" min="0" value="0">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

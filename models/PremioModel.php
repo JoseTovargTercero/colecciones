@@ -6,14 +6,15 @@ class PremioModel {
     private $db;
     public function __construct() { $this->db = Database::getInstance(); }
 
-    public function listar(): array {
-        // Asumo que se lista filtrando por los premios del usuario actual (o empresas a las que tiene acceso).
-        // Si hay una tabla empresas, podemos hacer un JOIN o simplemente ordenar por empresa_id.
-        // Dado que la tabla solo tiene empresa_id, ordeno por eso.
-        $r = $this->db->query("SELECT p.id, p.empresa_id, p.nombre, p.foto, p.valor, e.nombre as empresa_nombre 
-                               FROM premios p 
-                               LEFT JOIN empresas e ON p.empresa_id = e.id 
-                               ORDER BY e.nombre ASC, p.nombre ASC");
+    public function listar(?string $empresa_id = null): array {
+        $sql = "SELECT p.id, p.empresa_id, p.nombre, p.foto, p.valor, e.nombre as empresa_nombre 
+                FROM premios p 
+                LEFT JOIN empresas e ON p.empresa_id = e.id";
+        if ($empresa_id) {
+            $sql .= " WHERE p.empresa_id='" . $this->db->real_escape_string($empresa_id) . "'";
+        }
+        $sql .= " ORDER BY e.nombre ASC, p.nombre ASC";
+        $r = $this->db->query($sql);
         return $r ? $r->fetch_all(MYSQLI_ASSOC) : [];
     }
 

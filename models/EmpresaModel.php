@@ -26,7 +26,7 @@ class EmpresaModel
 
     public function listar(): array
     {
-        $sql = "SELECT e.id, e.nombre, e.telefono, e.created_at, e.usuario_id, c.cantidad_cuetas as cantidad_cuotas, c.cuotas 
+        $sql = "SELECT e.id, e.nombre, e.telefono, e.dias_retraso_permitido, e.created_at, e.usuario_id, c.cantidad_cuetas as cantidad_cuotas, c.cuotas 
                 FROM {$this->table} e 
                 LEFT JOIN configuracion_cuotas_empresas c ON e.id = c.empresa_id 
                 ORDER BY e.created_at DESC";
@@ -41,7 +41,7 @@ class EmpresaModel
     public function obtenerPorId(string $id): ?array
     {
         $stmt = $this->db->prepare(
-            "SELECT e.id, e.nombre, e.telefono, e.created_at, e.usuario_id, c.cantidad_cuetas as cantidad_cuotas, c.cuotas 
+            "SELECT e.id, e.nombre, e.telefono, e.dias_retraso_permitido, e.created_at, e.usuario_id, c.cantidad_cuetas as cantidad_cuotas, c.cuotas 
              FROM {$this->table} e 
              LEFT JOIN configuracion_cuotas_empresas c ON e.id = c.empresa_id 
              WHERE e.id = ?"
@@ -60,6 +60,7 @@ class EmpresaModel
     {
         $nombre   = trim($in['nombre'] ?? '');
         $telefono = trim($in['telefono'] ?? '');
+        $dias     = (int)($in['dias_retraso_permitido'] ?? 0);
         $cantidad = (int)($in['cantidad_cuotas'] ?? 0);
         $cuotas   = $in['cuotas'] ?? [];
 
@@ -72,8 +73,8 @@ class EmpresaModel
 
         $this->db->begin_transaction();
         try {
-            $stmt = $this->db->prepare("INSERT INTO {$this->table} (id, nombre, telefono, created_at, usuario_id) VALUES (?,?,?,?,?)");
-            $stmt->bind_param('sssss', $id, $nombre, $telefono, $now, $usuarioId);
+            $stmt = $this->db->prepare("INSERT INTO {$this->table} (id, nombre, telefono, dias_retraso_permitido, created_at, usuario_id) VALUES (?,?,?,?,?,?)");
+            $stmt->bind_param('sssiss', $id, $nombre, $telefono, $dias, $now, $usuarioId);
             $stmt->execute();
             $stmt->close();
 
@@ -96,6 +97,7 @@ class EmpresaModel
     {
         $nombre   = trim($in['nombre'] ?? '');
         $telefono = trim($in['telefono'] ?? '');
+        $dias     = (int)($in['dias_retraso_permitido'] ?? 0);
         $cantidad = (int)($in['cantidad_cuotas'] ?? 0);
         $cuotas   = $in['cuotas'] ?? [];
 
@@ -104,8 +106,8 @@ class EmpresaModel
 
         $this->db->begin_transaction();
         try {
-            $stmt = $this->db->prepare("UPDATE {$this->table} SET nombre=?, telefono=? WHERE id=?");
-            $stmt->bind_param('sss', $nombre, $telefono, $id);
+            $stmt = $this->db->prepare("UPDATE {$this->table} SET nombre=?, telefono=?, dias_retraso_permitido=? WHERE id=?");
+            $stmt->bind_param('ssis', $nombre, $telefono, $dias, $id);
             $stmt->execute();
             $stmt->close();
 
