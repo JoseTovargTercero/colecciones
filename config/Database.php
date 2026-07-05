@@ -17,7 +17,21 @@ class Database
         }
         // =======================
 
-        $this->loadEnv(APP_ROOT . '/../../.env_colecciones');
+        $envPaths = [
+            APP_ROOT . '.env_colecciones',
+            APP_ROOT . '/../../.env_colecciones',
+        ];
+        $loaded = false;
+        foreach ($envPaths as $p) {
+            if (file_exists($p) || file_exists(str_replace('.env', 'env', $p))) {
+                $this->loadEnv($p);
+                $loaded = true;
+                break;
+            }
+        }
+        if (!$loaded) {
+            $this->errorResponse(500, "Archivo .env_colecciones no encontrado en el proyecto. Buscamos en: " . implode(', ', $envPaths));
+        }
 
         $host = $_ENV['DB_HOST'] ?? 'localhost';
         $dbname = $_ENV['DB_NAME'] ?? 'colecciones';

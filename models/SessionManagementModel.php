@@ -145,8 +145,12 @@ class SessionManagementModel
             $sessionStatus   = $loginSuccess ? 'active' : 'failed';
 
             // Device
-            $deviceIdVar   = $deviceId ?? null;               // string|null
-            $deviceTypeStr = (string)($deviceType ?? '');     // tratar como string
+            $deviceIdVar = $deviceId ?? null;                 // string|null
+            $deviceTypeInt = 0;
+            $dt = strtolower((string)($deviceType ?? ''));
+            if ($dt === 'mobile' || $dt === '1' || $dt === 1) {
+                $deviceTypeInt = 1;
+            }
 
             // --- MODIFICACIÓN 2: Actualizar SQL INSERT ---
             $sql = "INSERT INTO {$this->table} (
@@ -163,10 +167,9 @@ class SessionManagementModel
                 throw new mysqli_sql_exception("Error preparando la inserción: " . $this->db->error);
             }
 
-            // --- MODIFICACIÓN 3: Actualizar tipos (8s + 1i + 16s = 25) ---
-            $types = str_repeat('s', 8) . 'i' . str_repeat('s', 16); // 'ssssssssisssssssssssssssss'
+            // types: 8s + 1i + 13s + 1i + 2s = 25
+            $types = 'ssssssssisssssssssssssiss';
 
-            // --- MODIFICACIÓN 4: Actualizar bind_param ---
             $stmtInsert->bind_param(
                 $types,
                 $sessionId,          //  1 s
@@ -191,8 +194,8 @@ class SessionManagementModel
                 $browser,            // 20 s
                 $userAgent,          // 21 s
                 $deviceIdVar,        // 22 s
-                $deviceTypeStr,      // 23 s
-                $token,              // 24 s  <-- NUEVO
+                $deviceTypeInt,      // 23 i
+                $token,              // 24 s
                 $createdAt           // 25 s
             );
 
