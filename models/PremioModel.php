@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/../config/Database.php';
-require_once __DIR__ . '/../helpers/UuidHelper.php';
 
 class PremioModel {
     private $db;
@@ -29,12 +28,11 @@ class PremioModel {
         $this->fill($d);
         $e = trim($d['empresa_id'] ?? '');
         if (!$e) throw new Exception('Empresa requerida');
-        $id = UuidHelper::generateUUIDv4();
         
-        $stmt = $this->db->prepare("INSERT INTO premios (id, empresa_id, nombre, foto, valor) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param('ssssd', $id, $e, $d['nombre'], $d['foto'], $d['valor']);
+        $stmt = $this->db->prepare("INSERT INTO premios (empresa_id, nombre, foto, valor) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param('sssd', $e, $d['nombre'], $d['foto'], $d['valor']);
         $stmt->execute();
-        return $id;
+        return (string)$this->db->insert_id;
     }
 
     public function actualizar(string $id, array $d): bool {
