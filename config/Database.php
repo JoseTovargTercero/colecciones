@@ -17,7 +17,7 @@ class Database
         }
         // =======================
 
-        $dir = APP_ROOT . '../../.env_colecciones';
+        $dir = APP_ROOT . '../../env_colecciones';
         $this->loadEnv($dir);
 
 
