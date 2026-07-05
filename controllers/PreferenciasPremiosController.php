@@ -63,7 +63,7 @@ class PreferenciasPremiosController
         $temporada_id = trim($_POST['temporada_id'] ?? '');
         $vendedor_id  = (int)($_POST['vendedor_id'] ?? 0);
         $premio_ids   = $_POST['premio_ids'] ?? [];
-
+        $u = $_SESSION['user_id'] ?? '';
         if (!$empresa_id || !$temporada_id || !$vendedor_id || empty($premio_ids)) {
             $this->res(false, 'Faltan datos obligatorios.', null, 400);
         }
@@ -72,7 +72,7 @@ class PreferenciasPremiosController
         $premio_ids = array_map('intval', $premio_ids);
 
         try {
-            $this->m->asignarPremiosPagosTiempo($empresa_id, $temporada_id, $vendedor_id, $premio_ids);
+            $this->m->asignarPremiosPagosTiempo($empresa_id, $temporada_id, $vendedor_id, $premio_ids, $u);
             $this->res(true, 'Premio(s) asignado(s) correctamente.', null, 201);
         } catch (Throwable $e) {
             $this->res(false, 'Error: ' . $e->getMessage(), null, 500);
@@ -86,17 +86,17 @@ class PreferenciasPremiosController
         // Veamos cómo el router maneja params de URL. Normalmente vienen en $_GET['id'] si el router los inyecta.
         // Asumiremos $_GET['id'] (ya que otros endpoints los obtienen de ahí o usando el router, me guío de otros controladores).
         // Si el router no inyecta $_GET, extraemos del path.
-        
+
         $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $parts = explode('/', trim($path, '/'));
         $id = null;
         foreach ($parts as $i => $p) {
-            if ($p === 'preferencias-premios' && isset($parts[$i+1]) && is_numeric($parts[$i+1])) {
-                $id = (int)$parts[$i+1];
+            if ($p === 'preferencias-premios' && isset($parts[$i + 1]) && is_numeric($parts[$i + 1])) {
+                $id = (int)$parts[$i + 1];
                 break;
             }
         }
-        
+
         if (!$id) {
             $id = (int)($_GET['id'] ?? 0);
         }

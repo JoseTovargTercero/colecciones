@@ -51,15 +51,15 @@ class PreferenciasPremiosModel
         return $rows;
     }
 
-    public function asignarPremiosPagosTiempo(int $empresa_id, string $temporada_id, int $vendedor_id, array $premio_ids): void
+    public function asignarPremiosPagosTiempo(int $empresa_id, string $temporada_id, int $vendedor_id, array $premio_ids, string $u): void
     {
         $this->db->begin_transaction();
         try {
             $stmt = $this->db->prepare(
-                "INSERT INTO premios_solicitados (vendedor_id, empresa_id, temporada_id, premio_id, status) VALUES (?, ?, ?, ?, 'completado')"
+                "INSERT INTO premios_solicitados (vendedor_id, empresa_id, temporada_id, premio_id, status, usuario_id) VALUES (?, ?, ?, ?, 'completado', ?)"
             );
             foreach ($premio_ids as $pid) {
-                $stmt->bind_param('iisi', $vendedor_id, $empresa_id, $temporada_id, $pid);
+                $stmt->bind_param('iisis', $vendedor_id, $empresa_id, $temporada_id, $pid, $u);
                 $stmt->execute();
             }
             $stmt->close();
