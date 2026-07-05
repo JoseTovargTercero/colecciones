@@ -34,11 +34,19 @@ class ColeccionController {
         try {
             $d = $_POST;
             if (empty($d)) $d = json_decode(file_get_contents('php://input'), true) ?: [];
+            if (empty($d)) {
+                $ct = $_SERVER['CONTENT_TYPE'] ?? 'none';
+                $raw = file_get_contents('php://input');
+                $this->res(false, "Datos vacíos. Content-Type: $ct | POST=" . json_encode($_POST) . " | RAW=" . json_encode($raw), null, 400);
+            }
             $foto = $this->upload();
             if ($foto) $d['foto'] = $foto;
             $this->res(true, 'OK', ['id' => $this->m->crear($d)], 201);
         }
-        catch (Throwable $e) { $this->res(false, $e->getMessage(), null, 400); }
+        catch (Throwable $e) {
+            error_log('ColeccionController::crear error: ' . $e->getMessage() . ' | POST=' . json_encode($_POST) . ' | FILES=' . json_encode($_FILES));
+            $this->res(false, $e->getMessage(), null, 400);
+        }
     }
     public function actualizar($p) {
         if (!($id = $p['id'] ?? '')) $this->res(false, 'ID req', null, 400);

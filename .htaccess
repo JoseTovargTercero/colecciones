@@ -9,16 +9,12 @@ RewriteBase /
 # -------------------------------------------------------------
 
 # 1. Deshabilitar la visualización de los contenidos de los directorios
-# Evita que los visitantes puedan ver una lista de archivos en una carpeta.
 Options -Indexes
 
 # 2. Bloquear el acceso directo a carpetas sensibles
-# Devuelve un error 403 (Prohibido) si alguien intenta acceder a estas carpetas.
-# Añade aquí todas las carpetas que contengan lógica interna.
 RewriteRule ^(controllers|models|views|core|config)/ - [F,L]
 
 # 3. Bloquear el acceso directo a archivos específicos
-# Protege archivos críticos como el propio Router.php
 RewriteRule ^(Router\.php)$ - [F,L]
 
 
