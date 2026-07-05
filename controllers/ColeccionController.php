@@ -12,6 +12,9 @@ class ColeccionController {
 
     private function upload() {
         if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
+            if ($_FILES['foto']['size'] > 1048576) {
+                throw new Exception('La foto no debe superar 1 MB.');
+            }
             $ext = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
             $name = uniqid() . '.' . $ext;
             $dir = __DIR__ . '/../uploads/colecciones/';

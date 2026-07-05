@@ -30,6 +30,20 @@
 </style>
 
 <script>
+// Global file size validation (<1MB)
+document.addEventListener('change', function(e) {
+    var input = e.target;
+    if (input && input.type === 'file' && input.accept && input.accept.indexOf('image') !== -1) {
+        for (var i = 0; i < input.files.length; i++) {
+            if (input.files[i].size > 1048576) {
+                Swal.fire({ icon: 'warning', title: 'Foto muy pesada', text: 'La imagen "' + input.files[i].name + '" pesa ' + (input.files[i].size / 1048576).toFixed(1) + ' MB. Debe ser menor a 1 MB.' });
+                input.value = '';
+                break;
+            }
+        }
+    }
+});
+
 (function(){
     let loaderCount = 0;
     const loader = document.getElementById('globalLoader');
