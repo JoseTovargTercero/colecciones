@@ -17,7 +17,7 @@ class Database
         }
         // =======================
 
-        $this->loadEnv(APP_ROOT . '/.env_colecciones');
+        $this->loadEnv(APP_ROOT . '/../../.env_colecciones');
 
         $host = $_ENV['DB_HOST'] ?? 'localhost';
         $dbname = $_ENV['DB_NAME'] ?? 'colecciones';
