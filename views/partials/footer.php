@@ -419,6 +419,7 @@
                     tutorialState = d;
 
                     if (d.completed) {
+                        sessionStorage.setItem('tutorial_done', '1');
                         overlay.style.display = 'none';
                         return;
                     }
@@ -458,12 +459,9 @@
                     tutorialState = d;
 
                     if (d.completed) {
-                        tStepWrap.style.display = 'none';
-                        tWelcome.style.display = 'none';
-                        tCompleted.style.display = '';
-                        tProgress.textContent = 'Completado';
-                        renderDots(d, true);
-                        setPosition(false);
+                        sessionStorage.setItem('tutorial_done', '1');
+                        overlay.style.display = 'none';
+                        hideBackdrop();
                         return;
                     }
 
