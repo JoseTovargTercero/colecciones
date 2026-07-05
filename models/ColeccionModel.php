@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/../config/Database.php';
-require_once __DIR__ . '/../helpers/UuidHelper.php';
 
 class ColeccionModel
 {
@@ -39,12 +38,11 @@ class ColeccionModel
         $e = trim($d['empresa_id'] ?? '');
         if (!$e) throw new Exception('Empresa requerida');
         $u = $_SESSION['user_id'] ?? '';
-        $id = UuidHelper::generateUUIDv4();
 
-        $stmt = $this->db->prepare("INSERT INTO colecciones_combos (id, empresa_id, nombre, foto, precio_base, precio_venta_vendedor, ganancia_vendedor, tipo, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param('ssssdddss', $id, $e, $d['nombre'], $d['foto'], $d['precio_base'], $d['precio_venta_vendedor'], $d['ganancia_vendedor'], $d['tipo'], $u);
+        $stmt = $this->db->prepare("INSERT INTO colecciones_combos (empresa_id, nombre, foto, precio_base, precio_venta_vendedor, ganancia_vendedor, tipo, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param('sssdddss', $e, $d['nombre'], $d['foto'], $d['precio_base'], $d['precio_venta_vendedor'], $d['ganancia_vendedor'], $d['tipo'], $u);
         $stmt->execute();
-        return $id;
+        return (string)$this->db->insert_id;
     }
 
     public function actualizar(string $id, array $d): bool
