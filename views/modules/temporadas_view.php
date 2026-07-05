@@ -128,6 +128,7 @@
 
             await fetch(this.api + (i ? '/' + i : ''), {
                 method: i ? 'PUT' : 'POST',
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(b)
             });
 
