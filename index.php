@@ -34,11 +34,7 @@ use App\Router;
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start(); // Iniciar sesión si no está iniciada
-} else {
-    echo "la sesión ya estaba iniciada";
 }
-
-
 
 
 $host = $_SERVER['HTTP_HOST'];
