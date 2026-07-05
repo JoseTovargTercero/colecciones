@@ -22,11 +22,10 @@ class TemporadaModel {
         if (!$n || !$fi || !$ff || !$e) throw new Exception('Faltan datos');
         if ($fi >= $ff) throw new Exception('Fechas inválidas (inicio >= fin)');
 
-        $id = UuidHelper::generateUUIDv4();
-        $stmt = $this->db->prepare("INSERT INTO temporadas (id, nombre, fecha_inicio, fecha_fin, created_at, empresa_id, usuario_id) VALUES (?, ?, ?, ?, NOW(), ?, ?)");
-        $stmt->bind_param('ssssss', $id, $n, $fi, $ff, $e, $u);
+        $stmt = $this->db->prepare("INSERT INTO temporadas (nombre, fecha_inicio, fecha_fin, created_at, empresa_id, usuario_id) VALUES (?, ?, ?, NOW(), ?, ?)");
+        $stmt->bind_param('sssss', $n, $fi, $ff, $e, $u);
         $stmt->execute();
-        return $id;
+        return $this->db->insert_id;
     }
 
     public function actualizar(string $id, array $d): bool {

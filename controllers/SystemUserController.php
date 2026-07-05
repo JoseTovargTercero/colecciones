@@ -205,7 +205,7 @@ class SystemUserController
                 'permisos' => $permisosArray,
                 'token' => $sessionData['token'],      // token de sesión
                 'session_id' => $sessionData['session_id'], // id de sesión
-                'redirect_url' => '/perfil'
+                'redirect_url' => '/dashboard'
             ];
 
             $result['verificado'] = true;
@@ -462,6 +462,9 @@ class SystemUserController
             $token = $sessionData['token'];
 
             $_SESSION['session_id'] = $sessionId;
+
+            // --- BCV: obtener tasa del BCV ---
+            $this->obtenerBcvRate();
 
             // --- MODIFICACIÓN: Añadir token y session_id a la respuesta ---
             $responseData = $usuario;
@@ -756,7 +759,6 @@ class SystemUserController
             $this->jsonResponse(true, 'Perfil actualizado correctamente.', [
                 'nuevo_nombre' => $datosParaActualizar['nombre']
             ]);
-
         } catch (InvalidArgumentException $e) {
             // (p.ej. email duplicado)
             $this->jsonResponse(false, $e->getMessage(), null, 400);
@@ -768,4 +770,36 @@ class SystemUserController
         }
     }
 
+    private function obtenerBcvRate(): void
+    {
+        try {
+            $ctx = stream_context_create(['http' => ['timeout' => 5, 'method' => 'GET']]);
+            $resp = @file_get_contents('https://iseller-tiendas.com/inventario/configurar/bcv_api.php', false, $ctx);
+            if ($resp !== false) {
+                $data = json_decode($resp, true);
+                if (isset($data['status'], $data['valor'], $data['time']) && $data['status'] === 'success') {
+                    $_SESSION['bcv_valor'] = (float) $data['valor'];
+                    $_SESSION['bcv_time']  = $data['time'];
+                    $_SESSION['bcv_ok']    = true;
+                    return;
+                }
+            }
+        } catch (\Throwable $e) {
+            error_log('BCV fetch error: ' . $e->getMessage());
+        }
+        $_SESSION['bcv_ok'] = false;
+    }
+
+    public function bcvRefresh(): void
+    {
+        $this->obtenerBcvRate();
+        if (!empty($_SESSION['bcv_ok']) && $_SESSION['bcv_ok']) {
+            $this->jsonResponse(true, 'OK', [
+                'valor' => $_SESSION['bcv_valor'],
+                'time'  => $_SESSION['bcv_time'],
+            ]);
+        } else {
+            $this->jsonResponse(false, 'No disponible', null);
+        }
+    }
 }

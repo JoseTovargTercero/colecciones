@@ -43,7 +43,7 @@ $userType = $_SESSION['codigo'] ?? '';
             </li>
 
             <!-- Notifications -->
-            <li class="nav-item dropdown me-2">
+            <li class="nav-item dropdown me-2 d-none">
                 <a class="nav-link dropdown-toggle hide-arrow" href="#" data-bs-toggle="dropdown" id="notification-dropdown-toggle">
                     <i class="bx bx-bell bx-sm"></i>
                     <span class="badge bg-danger rounded-pill badge-notifications" id="alert-count">0</span>
@@ -81,11 +81,25 @@ $userType = $_SESSION['codigo'] ?? '';
                 </div>
             </li>
 
+            <!-- BCV Rate -->
+            <li class="nav-item lh-1 me-3">
+                <div class="d-flex align-items-center gap-1 text-muted small" style="font-size:0.8rem">
+                    <i class="bx bx-dollar-circle text-success"></i>
+                    <span>BCV:</span>
+                    <?php if (!empty($_SESSION['bcv_ok']) && $_SESSION['bcv_ok']): ?>
+                        <span class="fw-semibold text-dark">Bs. <?= number_format($_SESSION['bcv_valor'], 2, ',', '.') ?></span>
+                        <span style="font-size:0.7rem;opacity:0.7">(<?= date('d/m h:s A', strtotime($_SESSION['bcv_time'])) ?>)</span>
+                    <?php else: ?>
+                        <span class="fw-semibold text-muted">N/D</span>
+                    <?php endif; ?>
+                </div>
+            </li>
+
             <!-- User -->
             <li class="nav-item navbar-dropdown dropdown-user dropdown">
                 <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
                     <div class="avatar avatar-online">
-                        <img src="<?= BASE_URL ?>public/assets/images/users/avatar-1.jpg" alt class="w-px-40 h-auto rounded-circle" />
+                        <img src="<?= BASE_URL ?>public/assets/images/users/avatar-1.png" alt class="w-px-40 h-auto rounded-circle" />
                     </div>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
@@ -94,7 +108,7 @@ $userType = $_SESSION['codigo'] ?? '';
                             <div class="d-flex">
                                 <div class="flex-shrink-0 me-3">
                                     <div class="avatar avatar-online">
-                                        <img src="<?= BASE_URL ?>public/assets/images/users/avatar-1.jpg" alt class="w-px-40 h-auto rounded-circle" />
+                                        <img src="<?= BASE_URL ?>public/assets/images/users/avatar-1.png" alt class="w-px-40 h-auto rounded-circle" />
                                     </div>
                                 </div>
                                 <div class="flex-grow-1">
@@ -104,14 +118,18 @@ $userType = $_SESSION['codigo'] ?? '';
                             </div>
                         </a>
                     </li>
-                    <li><div class="dropdown-divider"></div></li>
+                    <li>
+                        <div class="dropdown-divider"></div>
+                    </li>
                     <li>
                         <a class="dropdown-item" href="<?= BASE_URL ?>perfil">
                             <i class="bx bx-user me-2"></i>
                             <span class="align-middle">Mi Perfil</span>
                         </a>
                     </li>
-                    <li><div class="dropdown-divider"></div></li>
+                    <li>
+                        <div class="dropdown-divider"></div>
+                    </li>
                     <li>
                         <a class="dropdown-item" href="<?= BASE_URL ?>api/logout">
                             <i class="bx bx-power-off me-2"></i>
@@ -127,6 +145,19 @@ $userType = $_SESSION['codigo'] ?? '';
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Menu toggle
+        document.querySelectorAll('.layout-menu-toggle').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var isXl = window.matchMedia('(min-width: 1200px)').matches;
+                if (isXl) {
+                    document.body.classList.toggle('layout-menu-collapsed');
+                } else {
+                    document.body.classList.toggle('layout-menu-expanded');
+                }
+            });
+        });
+
         const userAgent = navigator.userAgent;
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
         const downloadLi = document.getElementById('download-app-li');
@@ -157,14 +188,6 @@ $userType = $_SESSION['codigo'] ?? '';
             });
         }
 
-        // Menu toggle
-        document.querySelectorAll('.layout-menu-toggle').forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                document.body.classList.toggle('layout-menu-collapsed');
-            });
-        });
-
         // Search by cedula
         const searchInput = document.getElementById('tbSearchInput');
         const searchBtn = document.getElementById('tbSearchBtn');
@@ -174,7 +197,10 @@ $userType = $_SESSION['codigo'] ?? '';
 
         function doSearch() {
             const q = searchInput.value.trim();
-            if (!q) { resultsEl.style.display = 'none'; return; }
+            if (!q) {
+                resultsEl.style.display = 'none';
+                return;
+            }
 
             resultsEl.style.display = 'block';
             resultsEl.innerHTML = '<div class="p-3 text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>';
@@ -194,10 +220,20 @@ $userType = $_SESSION['codigo'] ?? '';
 
                     // Merge empresas from both lists
                     const empMap = {};
-                    asigs.forEach(a => { empMap[a.empresa_id] = { nombre: a.empresa_nombre, asig: parseInt(a.total_asignaciones) || 0, prem: 0 }; });
+                    asigs.forEach(a => {
+                        empMap[a.empresa_id] = {
+                            nombre: a.empresa_nombre,
+                            asig: parseInt(a.total_asignaciones) || 0,
+                            prem: 0
+                        };
+                    });
                     premios.forEach(p => {
                         if (empMap[p.empresa_id]) empMap[p.empresa_id].prem = parseInt(p.total_premios) || 0;
-                        else empMap[p.empresa_id] = { nombre: p.empresa_nombre, asig: 0, prem: parseInt(p.total_premios) || 0 };
+                        else empMap[p.empresa_id] = {
+                            nombre: p.empresa_nombre,
+                            asig: 0,
+                            prem: parseInt(p.total_premios) || 0
+                        };
                     });
 
                     const empresas = Object.values(empMap);
@@ -230,12 +266,18 @@ $userType = $_SESSION['codigo'] ?? '';
 
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
-            if (!this.value.trim()) { resultsEl.style.display = 'none'; return; }
+            if (!this.value.trim()) {
+                resultsEl.style.display = 'none';
+                return;
+            }
             searchTimeout = setTimeout(doSearch, 300);
         });
 
         searchInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') { clearTimeout(searchTimeout); doSearch(); }
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                doSearch();
+            }
         });
 
         // Close on click outside

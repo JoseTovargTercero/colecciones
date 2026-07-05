@@ -34,8 +34,8 @@ class AsignacionModel
     public function crear(array $d): string
     {
         $vendedor_id   = isset($d['vendedor_id']) ? (int)$d['vendedor_id'] : 0;
-        $coleccion_id  = isset($d['coleccion_id']) ? (int)$d['coleccion_id'] : 0;
-        $temporada_id  = isset($d['temporada_id']) ? (int)$d['temporada_id'] : 0;
+        $coleccion_id  = $d['coleccion_id'] ?? '';
+        $temporada_id  = $d['temporada_id'] ?? '';
 
 
 
@@ -81,7 +81,7 @@ class AsignacionModel
                  (vendedor_id, coleccion_combo_id, temporada_id, estado, aplica_premio_especial, fecha_asignacion, usuario_id, costo, ganancia_vendedor, ganancia_gerente)
                  VALUES (?, ?, ?, 'activa', 0, ?, ?, ?, ?, ?)"
             );
-            $stmt->bind_param('iiissddd', $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $u, $precio_venta_vendedor, $ganancia_vendedor, $ganancia_gerente);
+            $stmt->bind_param('issssddd', $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $u, $precio_venta_vendedor, $ganancia_vendedor, $ganancia_gerente);
 
             $stmt2 = $this->db->prepare(
                 "INSERT INTO cuotas_coleccion

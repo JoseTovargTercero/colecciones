@@ -101,4 +101,58 @@ class VendedorModel {
             'premios' => $premios,
         ];
     }
+
+    public function obtenerDetalles(int $id): ?array
+    {
+        $u = $_SESSION['user_id'] ?? '';
+
+        $stmt = $this->db->prepare("SELECT id, nombre, cedula, telefono, nivel, created_at FROM vendedores WHERE id = ? AND usuario_id = ?");
+        $stmt->bind_param('is', $id, $u);
+        $stmt->execute();
+        $v = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if (!$v) return null;
+
+        // Asignaciones activas (no finalizadas)
+        $r = $this->db->query(
+            "SELECT ac.id, cc.nombre as coleccion, e.nombre as empresa, ac.costo, ac.estado,
+                    ac.created_at
+             FROM asignaciones_colecciones ac
+             INNER JOIN colecciones_combos cc ON ac.coleccion_combo_id = cc.id
+             INNER JOIN empresas e ON cc.empresa_id = e.id
+             WHERE ac.vendedor_id = $id AND ac.estado != 'finalizada'
+             ORDER BY ac.created_at DESC"
+        );
+        $asignaciones = $r ? $r->fetch_all(MYSQLI_ASSOC) : [];
+
+        // Cuotas pendientes de estas asignaciones
+        $r = $this->db->query(
+            "SELECT c.id, c.numero_cuota, c.fecha_pago, c.monto_a_pagar, c.monto_pendiente, c.estatus_pago,
+                    cc.nombre as coleccion, e.nombre as empresa
+             FROM cuotas_coleccion c
+             INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
+             INNER JOIN colecciones_combos cc ON ac.coleccion_combo_id = cc.id
+             INNER JOIN empresas e ON cc.empresa_id = e.id
+             WHERE ac.vendedor_id = $id AND c.estatus_pago IN ('pendiente','vencido','dentro_de_margen')
+             ORDER BY c.fecha_pago ASC"
+        );
+        $cuotas = $r ? $r->fetch_all(MYSQLI_ASSOC) : [];
+
+        // Premios pendientes
+        $r = $this->db->query(
+            "SELECT ps.id, ps.created_at, p.nombre, p.valor, ps.status
+             FROM premios_solicitados ps
+             INNER JOIN premios p ON ps.premio_id = p.id
+             WHERE ps.vendedor_id = $id AND ps.status = 'pendiente'
+             ORDER BY ps.created_at DESC"
+        );
+        $premios = $r ? $r->fetch_all(MYSQLI_ASSOC) : [];
+
+        return [
+            'vendedor' => $v,
+            'asignaciones' => $asignaciones,
+            'cuotas' => $cuotas,
+            'premios' => $premios,
+        ];
+    }
 }

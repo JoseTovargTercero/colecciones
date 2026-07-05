@@ -1,13 +1,7 @@
 import { showErrorToast } from "../helpers/helpers.js";
 
-// Variable global para almacenar los datos del usuario actual
 let currentUserData = {};
 
-
-
-/**
- * Carga los datos del perfil del usuario (info y permisos) y todos los menús.
- */
 const cargarDatosDelPerfil = () => {
   $.ajax({ url: baseUrl + "api/perfil", method: "GET" })
     .then(function (perfilRes) {
@@ -29,16 +23,6 @@ const cargarDatosDelPerfil = () => {
             : '<span class="badge bg-danger">Inactivo</span>',
         );
         $("#perfil_creado").text(creado);
-
-        if (currentUserData.permisos && currentUserData.permisos.length) {
-          const badges = currentUserData.permisos
-            .filter(Boolean)
-            .map(p => `<span class="badge bg-primary me-1 mb-1">${p}</span>`)
-            .join("");
-          $("#accordionPermisos").html(
-            badges || "<p class='text-muted'>Sin permisos específicos.</p>"
-          );
-        }
       } else {
         showErrorToast({
           message: "No se pudieron cargar los datos del perfil.",
@@ -50,6 +34,28 @@ const cargarDatosDelPerfil = () => {
     });
 };
 
+const cargarCounts = () => {
+  const url = baseUrl.replace(/\/+$/, '') + '/api/tutorial/state';
+  fetch(url)
+    .then(r => r.json())
+    .then(json => {
+      if (!json.value || !json.data) {
+        console.warn('perfil counts: API returned', json);
+        return;
+      }
+      const counts = json.data.counts || {};
+      const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val ?? '0';
+      };
+      set('countEmpresas', counts.empresas);
+      set('countTemporadas', counts.temporadas);
+      set('countColecciones', counts.colecciones_combos);
+      set('countVendedores', counts.vendedores);
+    })
+    .catch(e => console.warn('perfil counts error:', e));
+};
+
 // --- Inicio de la ejecución ---
 document.addEventListener("DOMContentLoaded", function () {
   const modalPerfil = new bootstrap.Modal(
@@ -57,8 +63,8 @@ document.addEventListener("DOMContentLoaded", function () {
   );
   const formPerfil = document.getElementById("formPerfil");
 
-  // Cargar datos en cuanto la página esté lista
   cargarDatosDelPerfil();
+  cargarCounts();
 
   // 1. Botón "Editar Perfil"
   $("#btnEditarPerfil").on("click", function () {

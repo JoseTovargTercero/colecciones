@@ -94,6 +94,100 @@ class ControlPagosModel
         ];
     }
 
+    public function historial(int $empresa_id, string $temporada_id): array
+    {
+        // 1. Get all paid cuotas with comprobante IDs
+        $stmt = $this->db->prepare(
+            "SELECT ac.id as asignacion_id, cc.nombre as coleccion_nombre,
+                    cc.tipo as coleccion_tipo, cc.precio_venta_vendedor,
+                    v.id as vendedor_id, v.nombre as vendedor_nombre,
+                    v.cedula as vendedor_cedula,
+                    c.id as cuota_id, c.numero_cuota, c.monto_a_pagar,
+                    c.monto_pagado, c.fecha_pago, c.fecha_vencimiento,
+                    c.estatus_pago, c.pagado_a_tiempo,
+                    c.comprobante as comprobante_ids
+             FROM cuotas_coleccion c
+             INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
+             INNER JOIN colecciones_combos cc ON ac.coleccion_combo_id = cc.id
+             INNER JOIN vendedores v ON ac.vendedor_id = v.id
+             WHERE cc.empresa_id = ? AND ac.temporada_id = ?
+               AND c.estatus_pago = 'realizado'
+             ORDER BY ac.id, c.numero_cuota"
+        );
+        $stmt->bind_param('is', $empresa_id, $temporada_id);
+        $stmt->execute();
+        $cuotas = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        // 2. Collect all comprobante IDs
+        $allIds = [];
+        foreach ($cuotas as $c) {
+            if ($c['comprobante_ids']) {
+                foreach (explode('|', $c['comprobante_ids']) as $id) {
+                    $id = trim($id);
+                    if ($id !== '') $allIds[(int)$id] = true;
+                }
+            }
+        }
+
+        // 3. Fetch comprobantes
+        $comprobantes = [];
+        if ($allIds) {
+            $ids = implode(',', array_keys($allIds));
+            $r = $this->db->query(
+                "SELECT id, monto, numero_operacion, comprobante,
+                        fecha_pago_comprobante, created_at
+                 FROM comprobantes WHERE id IN ($ids)"
+            );
+            if ($r) {
+                while ($row = $r->fetch_assoc()) {
+                    $comprobantes[(int)$row['id']] = $row;
+                }
+            }
+        }
+
+        // 4. Attach comprobantes to each cuota, group by asignacion
+        $grupos = [];
+        foreach ($cuotas as $c) {
+            $aid = (int)$c['asignacion_id'];
+            if (!isset($grupos[$aid])) {
+                $grupos[$aid] = [
+                    'asignacion_id' => $aid,
+                    'coleccion_nombre' => $c['coleccion_nombre'],
+                    'coleccion_tipo' => $c['coleccion_tipo'],
+                    'precio_venta_vendedor' => $c['precio_venta_vendedor'],
+                    'vendedor_nombre' => $c['vendedor_nombre'],
+                    'vendedor_cedula' => $c['vendedor_cedula'],
+                    'cuotas' => [],
+                ];
+            }
+
+            $cuotaComps = [];
+            if ($c['comprobante_ids']) {
+                foreach (explode('|', $c['comprobante_ids']) as $id) {
+                    $id = (int)trim($id);
+                    if ($id && isset($comprobantes[$id])) {
+                        $cuotaComps[] = $comprobantes[$id];
+                    }
+                }
+            }
+
+            $grupos[$aid]['cuotas'][] = [
+                'cuota_id' => $c['cuota_id'],
+                'numero_cuota' => $c['numero_cuota'],
+                'monto_a_pagar' => $c['monto_a_pagar'],
+                'monto_pagado' => $c['monto_pagado'],
+                'fecha_pago' => $c['fecha_pago'],
+                'fecha_vencimiento' => $c['fecha_vencimiento'],
+                'estatus_pago' => $c['estatus_pago'],
+                'pagado_a_tiempo' => $c['pagado_a_tiempo'],
+                'comprobantes' => $cuotaComps,
+            ];
+        }
+
+        return array_values($grupos);
+    }
+
     public function getPremioInfo($vendedor_id, $empresa_id, $temporada_id)
     {
         // 1. Obtener total ganancias y cantidad de asignaciones activas

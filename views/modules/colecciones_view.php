@@ -3,7 +3,7 @@
         <div class="col-12">
             <div class="page-title-box d-flex justify-content-between align-items-center">
                 <h4 class="page-title">Colecciones y Combos</h4>
-                <button class="btn btn-primary" onclick="window.c.add()">+ Nuevo</button>
+                <button class="btn btn-primary" onclick="window.c.add()">+ Nueva Colección</button>
             </div>
         </div>
     </div>
@@ -42,6 +42,13 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
+                        <label for="cEmp" class="form-label">Empresa</label>
+                        <select class="form-control mb-2" id="cEmp" required>
+                            <option value="">Empresa...</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
                         <label for="cNombre" class="form-label">Nombre</label>
                         <input class="form-control mb-2" id="cNombre" placeholder="Nombre" required>
                     </div>
@@ -54,31 +61,45 @@
 
                     <div class="mb-3">
                         <label for="cTipo" class="form-label">Tipo</label>
-                        <select class="form-control mb-2" id="cTipo" onchange="window.c.tg()" required>
+                        <select class="form-control mb-2" id="cTipo" onchange="window.c.tg();window.c.validarCampos()" required>
                             <option value="coleccion">Colección</option>
                             <option value="combo">Combo</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="cPb" class="form-label">Precio de la empresa</label>
-                        <input type="number" step="0.01" class="form-control mb-2" id="cPb" placeholder="Precio Base" required>
+                        <label for="cPb" class="form-label">
+                            Precio de la empresa
+                        </label>
+
+
+                        <div class="input-group input-group-merge form-send-message">
+                            <input type="number" step="0.01" min="0" class="form-control mb-1" id="cPb" placeholder="Precio Base" required oninput="window.c.validarCampos()">
+                            <span class="message-actions input-group-text" title="Costo interno que maneja la empresa por la coleccion (El precio al que recibes al colección)">
+                                <i class="icon-base text-primary bx bx-help-circle"></i>
+                            </span>
+                        </div>
+
+                        <div class="invalid-feedback" id="cPbError"></div>
+
+
+
+
+
+
                     </div>
 
                     <div class="mb-3">
                         <label for="cPvv" class="form-label">Precio al entregar al vendedor</label>
-                        <input type="number" step="0.01" class="form-control mb-2" id="cPvv" placeholder="Precio Venta Vendedor">
+                        <input type="number" step="0.01" min="0" class="form-control mb-1" id="cPvv" placeholder="Precio Venta Vendedor" oninput="window.c.validarCampos()">
+                        <div class="invalid-feedback" id="cPvvError"></div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="cGv" class="form-label">Ganancia del vendedor</label>
-                        <input type="number" step="0.01" class="form-control mb-2" id="cGv" placeholder="Ganancia Vendedor">
+                        <label for="cGv" class="form-label">Ganancia del vendedor (USD)</label>
+                        <input type="number" step="0.01" min="0" class="form-control mb-1" id="cGv" placeholder="Ganancia Vendedor (USD)" oninput="window.c.validarCampos()">
+                        <div class="invalid-feedback" id="cGvError"></div>
                     </div>
-                    <div class="mb-3">
-                        <label for="cEmp" class="form-label">Empresa</label>
-                        <select class="form-control mb-2" id="cEmp" required>
-                            <option value="">Empresa...</option>
-                        </select>
-                    </div>
+
                     <input type="hidden" id="cId">
                 </div>
                 <div class="modal-footer"><button type="submit" class="btn btn-primary">Guardar</button></div>
@@ -138,12 +159,71 @@
                 this.load();
             });
         },
+        validarCampos() {
+            const pb = parseFloat(document.getElementById('cPb')?.value) || 0;
+            const pvv = parseFloat(document.getElementById('cPvv')?.value) || 0;
+            const gv = parseFloat(document.getElementById('cGv')?.value) || 0;
+            const esCombo = document.getElementById('cTipo')?.value === 'combo';
+
+            let ok = true;
+
+            function setErr(id, msg) {
+                const el = document.getElementById(id);
+                const input = el?.previousElementSibling;
+                if (msg) {
+                    el.textContent = msg;
+                    input?.classList.add('is-invalid');
+                    ok = false;
+                } else {
+                    el.textContent = '';
+                    input?.classList.remove('is-invalid');
+                }
+            }
+
+            if (pb <= 0) {
+                setErr('cPbError', 'Debe ser mayor a cero.');
+            } else {
+                setErr('cPbError', '');
+            }
+
+            if (esCombo) {
+                setErr('cPvvError', '');
+                setErr('cGvError', '');
+            } else {
+                if (pvv < 0) {
+                    setErr('cPvvError', 'No puede ser negativo.');
+                } else if (pvv < pb) {
+                    setErr('cPvvError', `Debe ser ≥ $${pb.toFixed(2)} (precio empresa).`);
+                } else {
+                    setErr('cPvvError', '');
+                }
+
+                if (gv < 0) {
+                    setErr('cGvError', 'No puede ser negativo.');
+                } else if (gv > pvv) {
+                    setErr('cGvError', `No puede superar $${pvv.toFixed(2)} (precio vendedor).`);
+                } else {
+                    setErr('cGvError', '');
+                }
+            }
+
+            return ok;
+        },
         tg() {
 
             if (cTipo && cPvv) {
                 let t = cTipo.value == 'combo';
-                cPvv.style.display = !t ? '' : 'none';
-                if (t) cPvv.value = '';
+                const pvvGroup = cPvv.closest('.mb-3');
+                const gvGroup = document.getElementById('cGv')?.closest('.mb-3');
+                if (t) {
+                    pvvGroup.style.display = 'none';
+                    gvGroup.style.display = 'none';
+                    cPvv.value = '';
+                    document.getElementById('cGv').value = '';
+                } else {
+                    pvvGroup.style.display = '';
+                    gvGroup.style.display = '';
+                }
             }
         },
         add() {
@@ -187,6 +267,7 @@
         },
         async save(e) {
             e.preventDefault();
+            if (!this.validarCampos()) return;
 
             let i = document.getElementById('cId')?.value || '',
                 t = document.getElementById('cTipo')?.value || '';

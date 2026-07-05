@@ -28,6 +28,57 @@ class PreferenciasPremiosController
         }
     }
 
+    public function pagosTiempo()
+    {
+        $empresa_id   = (int)($_GET['empresa_id'] ?? 0);
+        $temporada_id = trim($_GET['temporada_id'] ?? '');
+
+        if (!$empresa_id || !$temporada_id) {
+            $this->res(false, 'Faltan parámetros empresa_id y temporada_id.', null, 400);
+        }
+
+        try {
+            $data = $this->m->pagosTiempo($empresa_id, $temporada_id);
+            $this->res(true, 'OK', $data);
+        } catch (Throwable $e) {
+            $this->res(false, 'Error: ' . $e->getMessage(), null, 500);
+        }
+    }
+
+    public function premiosDisponibles()
+    {
+        $empresa_id = (int)($_GET['empresa_id'] ?? 0);
+        if (!$empresa_id) $this->res(false, 'Falta empresa_id.', null, 400);
+        try {
+            $data = $this->m->obtenerPremiosPorEmpresa($empresa_id);
+            $this->res(true, 'OK', $data);
+        } catch (Throwable $e) {
+            $this->res(false, 'Error: ' . $e->getMessage(), null, 500);
+        }
+    }
+
+    public function asignarPremios()
+    {
+        $empresa_id   = (int)($_POST['empresa_id'] ?? 0);
+        $temporada_id = trim($_POST['temporada_id'] ?? '');
+        $vendedor_id  = (int)($_POST['vendedor_id'] ?? 0);
+        $premio_ids   = $_POST['premio_ids'] ?? [];
+
+        if (!$empresa_id || !$temporada_id || !$vendedor_id || empty($premio_ids)) {
+            $this->res(false, 'Faltan datos obligatorios.', null, 400);
+        }
+
+        if (!is_array($premio_ids)) $premio_ids = [$premio_ids];
+        $premio_ids = array_map('intval', $premio_ids);
+
+        try {
+            $this->m->asignarPremiosPagosTiempo($empresa_id, $temporada_id, $vendedor_id, $premio_ids);
+            $this->res(true, 'Premio(s) asignado(s) correctamente.', null, 201);
+        } catch (Throwable $e) {
+            $this->res(false, 'Error: ' . $e->getMessage(), null, 500);
+        }
+    }
+
     public function entregar()
     {
         // Se espera el ID en la URL, manejado por el router o en $_GET si no es param de URL

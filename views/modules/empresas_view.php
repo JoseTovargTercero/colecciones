@@ -56,18 +56,17 @@
                         <label for="empresaTelefono" class="form-label">Teléfono</label>
                         <input type="text" class="form-control" id="empresaTelefono" name="telefono" maxlength="30">
                     </div>
-                    <hr>
-                    <h6 class="mb-3">Configuración de Cuotas</h6>
+                    <div class="mb-3">
+                        <label for="empresaDiasRetraso" class="form-label">Días de retraso permitidos</label>
+                        <input type="number" class="form-control" id="empresaDiasRetraso" min="0" value="0">
+                    </div>
                     <div class="mb-3">
                         <label for="empresaCuotas" class="form-label">Cantidad de Cuotas <span class="text-danger">*</span></label>
                         <input type="number" class="form-control" id="empresaCuotas" min="1" max="24" required>
                     </div>
                     <div id="cuotasContainer" class="row"></div>
-                    <hr>
-                    <div class="mb-3">
-                        <label for="empresaDiasRetraso" class="form-label">Días de retraso permitidos</label>
-                        <input type="number" class="form-control" id="empresaDiasRetraso" min="0" value="0">
-                    </div>
+
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -78,6 +77,7 @@
     </div>
 </div>
 
-<script>const baseUrl = "<?= BASE_URL ?>";</script>
+<script>
+    const baseUrl = "<?= BASE_URL ?>";
+</script>
 <script type="module" src="<?= BASE_URL ?>public/assets/js/modules/empresas_view.js"></script>
-

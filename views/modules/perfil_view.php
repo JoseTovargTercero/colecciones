@@ -35,14 +35,56 @@
         </div>
 
         <div class="col-lg-8">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="header-title mt-0 mb-3">Mis Permisos Asignados</h4>
-                    <p class="text-muted">Estos son los módulos a los que tienes acceso.</p>
-                    <div class="accordion custom-accordion" id="accordionPermisos">
-                        <div class="text-center p-4">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Cargando permisos...</span>
+            <h6 class="fw-semibold mb-3" style="color:#4a5568"><i class="bx bx-stats text-primary me-1"></i> Mis Estadísticas</h6>
+            <div class="row g-4" id="perfilCounts">
+                <div class="col-12 col-sm-6">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius:12px">
+                        <div class="card-body d-flex align-items-center p-3">
+                            <div class="avatar-sm d-flex justify-content-center align-items-center rounded-circle me-3" style="width:48px;height:48px;background:rgba(115,103,240,0.1);color:#7367f0;font-size:1.4rem">
+                                <i class="bx bx-buildings"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="text-muted small text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px">Empresas</div>
+                                <div class="fw-bold fs-5 mt-1" style="color:#4a5568" id="countEmpresas">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius:12px">
+                        <div class="card-body d-flex align-items-center p-3">
+                            <div class="avatar-sm d-flex justify-content-center align-items-center rounded-circle me-3" style="width:48px;height:48px;background:rgba(40,199,111,0.1);color:#28c76f;font-size:1.4rem">
+                                <i class="bx bx-calendar-event"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="text-muted small text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px">Temporadas</div>
+                                <div class="fw-bold fs-5 mt-1" style="color:#4a5568" id="countTemporadas">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius:12px">
+                        <div class="card-body d-flex align-items-center p-3">
+                            <div class="avatar-sm d-flex justify-content-center align-items-center rounded-circle me-3" style="width:48px;height:48px;background:rgba(255,159,67,0.1);color:#ff9f43;font-size:1.4rem">
+                                <i class="bx bx-package"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="text-muted small text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px">Colecciones</div>
+                                <div class="fw-bold fs-5 mt-1" style="color:#4a5568" id="countColecciones">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius:12px">
+                        <div class="card-body d-flex align-items-center p-3">
+                            <div class="avatar-sm d-flex justify-content-center align-items-center rounded-circle me-3" style="width:48px;height:48px;background:rgba(0,207,232,0.1);color:#00cfe8;font-size:1.4rem">
+                                <i class="bx bx-user"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="text-muted small text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px">Vendedores</div>
+                                <div class="fw-bold fs-5 mt-1" style="color:#4a5568" id="countVendedores">0</div>
                             </div>
                         </div>
                     </div>

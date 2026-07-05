@@ -42,6 +42,8 @@ class AuthController
             $_SESSION['nombre']    = $centro['nombre'];
             $_SESSION['codigo']    = $centro['codigo'];
 
+            $this->obtenerBcvRate();
+
             $this->json(true, 'Inicio de sesión exitoso.', [
                 'id'     => $centro['id'],
                 'nombre' => $centro['nombre'],
@@ -51,6 +53,26 @@ class AuthController
             error_log("Error en login: " . $e->getMessage());
             $this->json(false, 'Error al iniciar sesión.', null, 500);
         }
+    }
+
+    private function obtenerBcvRate(): void
+    {
+        try {
+            $ctx = stream_context_create(['http' => ['timeout' => 5, 'method' => 'GET']]);
+            $resp = @file_get_contents('https://iseller-tiendas.com/inventario/configurar/bcv_api.php', false, $ctx);
+            if ($resp !== false) {
+                $data = json_decode($resp, true);
+                if (isset($data['status'], $data['valor'], $data['time']) && $data['status'] === 'success') {
+                    $_SESSION['bcv_valor'] = (float) $data['valor'];
+                    $_SESSION['bcv_time']  = $data['time'];
+                    $_SESSION['bcv_ok']    = true;
+                    return;
+                }
+            }
+        } catch (\Throwable $e) {
+            error_log('BCV fetch error: ' . $e->getMessage());
+        }
+        $_SESSION['bcv_ok'] = false;
     }
 
     public function logout(): void

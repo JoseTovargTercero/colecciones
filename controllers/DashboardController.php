@@ -20,8 +20,10 @@ class DashboardController
 
     public function kpis()
     {
+        $empresa_id   = isset($_GET['empresa_id'])   ? (int)$_GET['empresa_id']   : null;
+        $temporada_id = isset($_GET['temporada_id']) ? trim($_GET['temporada_id']) : null;
         try {
-            $data = $this->m->kpis();
+            $data = $this->m->kpis($empresa_id, $temporada_id);
             $this->res(true, 'OK', $data);
         } catch (Throwable $e) {
             $this->res(false, 'Error: ' . $e->getMessage(), null, 500);

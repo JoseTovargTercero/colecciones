@@ -26,9 +26,10 @@ class EmpresaModel
 
     public function listar(): array
     {
-        $sql = "SELECT e.id, e.nombre, e.telefono, e.dias_retraso_permitido, e.created_at, e.usuario_id, c.cantidad_cuetas as cantidad_cuotas, c.cuotas 
-                FROM {$this->table} e 
-                LEFT JOIN configuracion_cuotas_empresas c ON e.id = c.empresa_id 
+        $sql = "SELECT e.id, e.nombre, e.telefono, e.dias_retraso_permitido, e.created_at, e.usuario_id,
+                       (SELECT c.cantidad_cuetas FROM configuracion_cuotas_empresas c WHERE c.empresa_id = e.id LIMIT 1) as cantidad_cuotas,
+                       (SELECT c.cuotas FROM configuracion_cuotas_empresas c WHERE c.empresa_id = e.id LIMIT 1) as cuotas
+                FROM {$this->table} e
                 ORDER BY e.created_at DESC";
         $res = $this->db->query($sql);
         $rows = $res->fetch_all(MYSQLI_ASSOC);
@@ -41,9 +42,10 @@ class EmpresaModel
     public function obtenerPorId(string $id): ?array
     {
         $stmt = $this->db->prepare(
-            "SELECT e.id, e.nombre, e.telefono, e.dias_retraso_permitido, e.created_at, e.usuario_id, c.cantidad_cuetas as cantidad_cuotas, c.cuotas 
-             FROM {$this->table} e 
-             LEFT JOIN configuracion_cuotas_empresas c ON e.id = c.empresa_id 
+            "SELECT e.id, e.nombre, e.telefono, e.dias_retraso_permitido, e.created_at, e.usuario_id,
+                    (SELECT c.cantidad_cuetas FROM configuracion_cuotas_empresas c WHERE c.empresa_id = e.id LIMIT 1) as cantidad_cuotas,
+                    (SELECT c.cuotas FROM configuracion_cuotas_empresas c WHERE c.empresa_id = e.id LIMIT 1) as cuotas
+             FROM {$this->table} e
              WHERE e.id = ?"
         );
         $stmt->bind_param('s', $id);
@@ -67,21 +69,20 @@ class EmpresaModel
         if ($nombre === '') throw new InvalidArgumentException('El nombre es obligatorio.');
         if ($cantidad <= 0) throw new InvalidArgumentException('Cantidad de cuotas obligatoria.');
 
-        $id        = UuidHelper::generateUUIDv4();
         $now       = $this->nowWithAudit();
         $usuarioId = $_SESSION['user_id'] ?? '';
 
         $this->db->begin_transaction();
         try {
-            $stmt = $this->db->prepare("INSERT INTO {$this->table} (id, nombre, telefono, dias_retraso_permitido, created_at, usuario_id) VALUES (?,?,?,?,?,?)");
-            $stmt->bind_param('sssiss', $id, $nombre, $telefono, $dias, $now, $usuarioId);
+            $stmt = $this->db->prepare("INSERT INTO {$this->table} (nombre, telefono, dias_retraso_permitido, created_at, usuario_id) VALUES (?,?,?,?,?)");
+            $stmt->bind_param('ssiss', $nombre, $telefono, $dias, $now, $usuarioId);
             $stmt->execute();
             $stmt->close();
+            $id = $this->db->insert_id;
 
-            $id_cuotas = UuidHelper::generateUUIDv4();
             $json_cuotas = json_encode($cuotas);
-            $stmt2 = $this->db->prepare("INSERT INTO configuracion_cuotas_empresas (id, empresa_id, cantidad_cuetas, cuotas) VALUES (?, ?, ?, ?)");
-            $stmt2->bind_param('ssis', $id_cuotas, $id, $cantidad, $json_cuotas);
+            $stmt2 = $this->db->prepare("INSERT INTO configuracion_cuotas_empresas (empresa_id, cantidad_cuetas, cuotas) VALUES (?, ?, ?)");
+            $stmt2->bind_param('iis', $id, $cantidad, $json_cuotas);
             $stmt2->execute();
             $stmt2->close();
 

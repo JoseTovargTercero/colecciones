@@ -25,6 +25,7 @@ require_once __DIR__ . '/controllers/CargaPagosController.php';
 require_once __DIR__ . '/controllers/PreferenciasPremiosController.php';
 require_once __DIR__ . '/controllers/DashboardController.php';
 require_once __DIR__ . '/controllers/CronController.php';
+require_once __DIR__ . '/controllers/TutorialController.php';
 
 
 use App\Core\ViewRenderer;
@@ -155,6 +156,7 @@ $router->group(['prefix' => '/api'], function ($router) {
     // endpoints de vendedores
     $router->get('/vendedores', ['controlador' => VendedorController::class, 'accion' => 'listar']);
     $router->get('/vendedores/buscar', ['controlador' => VendedorController::class, 'accion' => 'buscarPorCedula']);
+    $router->get('/vendedores/{id}/detalles', ['controlador' => VendedorController::class, 'accion' => 'detalles']);
     $router->post('/vendedores', ['controlador' => VendedorController::class, 'accion' => 'crear']);
     $router->post('/vendedores/{id}', ['controlador' => VendedorController::class, 'accion' => 'actualizar']);
     $router->delete('/vendedores/{id}', ['controlador' => VendedorController::class, 'accion' => 'eliminar']);
@@ -167,6 +169,7 @@ $router->group(['prefix' => '/api'], function ($router) {
 
     // control-pagos
     $router->get('/control-pagos', ['controlador' => ControlPagosController::class, 'accion' => 'listar']);
+    $router->get('/control-pagos/historial', ['controlador' => ControlPagosController::class, 'accion' => 'historial']);
     $router->get('/control-pagos/premio-info', ['controlador' => ControlPagosController::class, 'accion' => 'premioInfo']);
     $router->post('/control-pagos/solicitar-premio', ['controlador' => ControlPagosController::class, 'accion' => 'solicitarPremio']);
     $router->post('/cargar-pago', ['controlador' => CargaPagosController::class, 'accion' => 'procesar']);
@@ -175,6 +178,9 @@ $router->group(['prefix' => '/api'], function ($router) {
 
     // preferencias-premios
     $router->get('/preferencias-premios', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'listar']);
+    $router->get('/preferencias-premios/pagos-tiempo', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'pagosTiempo']);
+    $router->get('/preferencias-premios/premios-disponibles', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'premiosDisponibles']);
+    $router->post('/preferencias-premios/asignar-premios', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'asignarPremios']);
     $router->post('/preferencias-premios/{id}/entregar', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'entregar']);
 
     // dashboard
@@ -199,6 +205,12 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->delete('/notifications/{notifications_id}', ['controlador' => NotificationController::class, 'accion' => 'eliminar']);
     $router->post('/notifications/marcar_todas_vistas', ['controlador' => NotificationController::class, 'accion' => 'marcarTodasComoVistas']);
     $router->post('/notifications/marcar_todas_leidas', ['controlador' => NotificationController::class, 'accion' => 'marcarTodasComoLeidas']);
+
+    // tutorial
+    $router->get('/tutorial/state', ['controlador' => TutorialController::class, 'accion' => 'state']);
+
+    // bcv
+    $router->get('/bcv/refresh', ['controlador' => SystemUserController::class, 'accion' => 'bcvRefresh']);
 });
 
 

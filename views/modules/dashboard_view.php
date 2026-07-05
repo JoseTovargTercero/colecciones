@@ -4,7 +4,13 @@
             <h4 class="fw-bold mb-1" style="color: #4a5568;"><i class="bx bx-bar-chart-alt-2 text-primary me-2"></i>Dashboard</h4>
             <p class="text-muted mb-0 small" id="dashboardSubtitle">Cargando...</p>
         </div>
-        <div>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <select class="form-select form-select-sm" id="dashEmpresa" style="width: auto; min-width: 180px; border-radius: 8px;" onchange="filtrarCampanias(); cargarDashboard();">
+                <option value="">Todas las empresas</option>
+            </select>
+            <select class="form-select form-select-sm" id="dashCampania" style="width: auto; min-width: 180px; border-radius: 8px;" onchange="cargarDashboard();">
+                <option value="">Todas las campañas</option>
+            </select>
             <button class="btn btn-primary shadow-sm" onclick="cargarDashboard()" style="border-radius: 8px;">
                 <i class="bx bx-refresh me-1"></i>Actualizar
             </button>
@@ -26,15 +32,49 @@ const BASE = '<?= BASE_URL ?>';
 let _dashData = null;
 let _chartIngresos = null;
 let _chartVendedores = null;
+let _dashEmpresaId = '';
+let _dashTempId = '';
 
-document.addEventListener('DOMContentLoaded', cargarDashboard);
+document.addEventListener('DOMContentLoaded', async () => {
+    window._dashTemporadas = [];
+    const [re, rt] = await Promise.all([
+        fetch(BASE + 'api/empresas').then(r => r.json()),
+        fetch(BASE + 'api/temporadas').then(r => r.json()),
+    ]);
+    const empresas = re.data || [];
+    window._dashTemporadas = rt.data || [];
+    const selEmp = document.getElementById('dashEmpresa');
+    selEmp.innerHTML = '<option value="">Todas las empresas</option>';
+    empresas.forEach(e => {
+        selEmp.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
+    });
+    selEmp.value = '';
+    cargarDashboard();
+});
+
+function filtrarCampanias() {
+    const eid = document.getElementById('dashEmpresa').value;
+    const sel = document.getElementById('dashCampania');
+    sel.innerHTML = '<option value="">Todas las campañas</option>';
+    (window._dashTemporadas || [])
+        .filter(t => !eid || t.empresa_id == eid)
+        .forEach(t => {
+            const inicio = t.fecha_inicio ? ` (${t.fecha_inicio})` : '';
+            sel.innerHTML += `<option value="${t.id}">${t.nombre}${inicio}</option>`;
+        });
+}
 
 async function cargarDashboard() {
     const container = document.getElementById('dashboardContent');
     container.innerHTML = `<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><div class="text-muted mt-2">Cargando dashboard...</div></div>`;
 
     try {
-        const res = await fetch(BASE + 'api/dashboard/kpis');
+        const params = new URLSearchParams();
+        const eid = document.getElementById('dashEmpresa').value;
+        const tid = document.getElementById('dashCampania').value;
+        if (eid) params.set('empresa_id', eid);
+        if (tid) params.set('temporada_id', tid);
+        const res = await fetch(BASE + 'api/dashboard/kpis?' + params.toString());
         const json = await res.json();
         if (json.value) {
             _dashData = json.data;
@@ -57,6 +97,7 @@ function renderDashboard(d) {
         ${renderMorosidadPendiente(d)}
         ${renderCharts(d)}
         ${renderTopVendedoresTable(d)}
+        ${renderRankingResponsabilidad(d)}
     `;
     document.getElementById('dashboardContent').innerHTML = html;
     initCharts(d);
@@ -137,8 +178,8 @@ function renderCharts(d) {
         <div class="col-12 col-xl-7">
             <div class="card border-0 shadow-sm" style="border-radius: 12px;">
                 <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
-                    <h6 class="mb-0 fw-semibold"><i class="bx bx-line-chart text-primary me-1"></i> Proyección de Ingresos</h6>
-                    <small class="text-muted">Agrupado por semana</small>
+                    <h6 class="mb-0 fw-semibold"><i class="bx bx-credit-card text-warning me-1"></i> Pagos Pendientes</h6>
+                    <small class="text-muted">Por fecha de vencimiento</small>
                 </div>
                 <div class="card-body">
                     <div id="chartIngresos"></div>
@@ -191,22 +232,70 @@ function renderTopVendedoresTable(d) {
     </div>`;
 }
 
+function renderRankingResponsabilidad(d) {
+    const v = d.ranking_responsabilidad;
+    if (!v || !v.length) return '';
+    const maxCuotas = Math.max(...v.map(r => parseInt(r.cuotas_pagadas_tiempo)), 1);
+    return `<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+        <div class="card-header bg-transparent border-bottom py-3">
+            <h6 class="mb-0 fw-semibold"><i class="bx bx-check-shield text-success me-1"></i> Ranking de Responsabilidad <span class="badge bg-soft-success text-success ms-2 fw-normal" style="font-size: 0.7rem;">Pagos a Tiempo</span></h6>
+            <p class="text-muted small mb-0 mt-1">Vendedores ordenados por cuotas pagadas antes de su fecha de vencimiento</p>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <tr>
+                        <th class="border-0 ps-4">#</th>
+                        <th class="border-0">Vendedor</th>
+                        <th class="border-0 text-center">Pagadas a Tiempo</th>
+                        <th class="border-0 pe-4" style="min-width: 180px;">Responsabilidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${v.map((r, i) => {
+                        const pct = r.total_cuotas > 0 ? Math.round((r.cuotas_pagadas_tiempo / r.total_cuotas) * 100) : 0;
+                        const barColor = pct >= 80 ? '#28c76f' : pct >= 50 ? '#ff9f43' : '#ea5455';
+                        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+                        return `<tr>
+                            <td class="ps-4 fw-bold" style="font-size: 1.1rem; color: ${i === 0 ? '#ff9f43' : i === 1 ? '#a8aaae' : i === 2 ? '#cd7f32' : '#4a5568'};">${medal || (i + 1)}</td>
+                            <td><span class="fw-medium">${r.nombre || '—'}</span></td>
+                            <td class="text-center">
+                                <span class="badge bg-success bg-gradient px-3 py-2 fs-6">${r.cuotas_pagadas_tiempo}</span>
+                                <small class="text-muted d-block mt-1">de ${r.total_cuotas} cuotas</small>
+                            </td>
+                            <td class="pe-4">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height: 10px; border-radius: 5px; background: #e9ecef;">
+                                        <div class="progress-bar" role="progressbar" style="width: ${pct}%; background: ${barColor}; border-radius: 5px;" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <span class="fw-bold small" style="color: ${barColor};">${pct}%</span>
+                                </div>
+                            </td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>
+    </div>`;
+}
+
 function initCharts(d) {
-    // Proyección de Ingresos
-    const proy = d.proyeccion;
-    const labels = Object.keys(proy).sort();
-    const data = labels.map(k => proy[k]);
+    // Pagos Pendientes
+    const pp = d.pagos_pendientes || {};
+    const labels = Object.keys(pp).sort();
+    const data = labels.map(k => pp[k]);
 
     const ingresosOpts = {
         chart: { type: 'area', height: 300, toolbar: { show: false }, fontFamily: 'inherit' },
-        series: [{ name: 'Ingresos Proyectados', data }],
-        xaxis: { categories: labels, labels: { style: { fontSize: '11px' } } },
+        series: [{ name: 'Por Cobrar', data }],
+        xaxis: { type: 'datetime', categories: labels, labels: { format: 'dd MMM', style: { fontSize: '11px' } } },
         yaxis: { labels: { formatter: v => '$' + Number(v).toLocaleString('es-ES') } },
-        colors: ['#7367f0'],
+        colors: ['#ff9f43'],
         fill: { type: 'gradient', gradient: { shadeIntensity: 0.3, opacityFrom: 0.4, opacityTo: 0.1 } },
         stroke: { curve: 'smooth', width: 2 },
+        markers: { size: 6, strokeWidth: 0, hover: { size: 8 } },
         dataLabels: { enabled: false },
-        tooltip: { y: { formatter: v => '$' + Number(v).toLocaleString('es-ES', { minimumFractionDigits: 2 }) } },
+        tooltip: { x: { format: 'dd MMM yyyy' }, y: { formatter: v => '$' + Number(v).toLocaleString('es-ES', { minimumFractionDigits: 2 }) } },
         grid: { borderColor: '#f0f0f0' },
     };
     if (_chartIngresos) _chartIngresos.destroy();
@@ -233,3 +322,6 @@ function initCharts(d) {
     _chartVendedores.render();
 }
 </script>
+<style>
+.bg-soft-success { background-color: rgba(40, 199, 111, 0.12) !important; }
+</style>

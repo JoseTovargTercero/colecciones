@@ -53,4 +53,17 @@ class VendedorController {
             $this->res(false, $e->getMessage(), null, 500);
         }
     }
+
+    public function detalles($p)
+    {
+        $id = (int)($p['id'] ?? 0);
+        if (!$id) $this->res(false, 'ID requerido', null, 400);
+        try {
+            $data = $this->m->obtenerDetalles($id);
+            if (!$data) $this->res(false, 'Vendedor no encontrado', null, 404);
+            $this->res(true, 'OK', $data);
+        } catch (Throwable $e) {
+            $this->res(false, $e->getMessage(), null, 500);
+        }
+    }
 }

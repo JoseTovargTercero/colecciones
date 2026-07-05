@@ -2,8 +2,8 @@
     <div class="row">
         <div class="col-12">
             <div class="page-title-box d-flex justify-content-between align-items-center">
-                <h4 class="page-title">Temporadas</h4>
-                <button class="btn btn-primary" onclick="window.t.add()">+ Nueva</button>
+                <h4 class="page-title">Campañas</h4>
+                <button class="btn btn-primary" onclick="window.t.add()">+ Nueva Campaña</button>
             </div>
         </div>
     </div>
@@ -29,12 +29,18 @@
         <div class="modal-content">
             <form id="tForm" onsubmit="window.t.save(event)">
                 <div class="modal-header">
-                    <h5 class="modal-title">Temporada</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title">Campañas</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="tId">
                     <div class="mb-3">
-                        <label for="tNombre" class="form-label">Nombre</label>
+                        <label for="tEmp" class="form-label">Empresa</label>
+                        <select class="form-control mb-2" id="tEmp" required>
+                            <option value="">Empresa...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tNombre" class="form-label">Nombre de la campaña</label>
                         <input class="form-control mb-2" id="tNombre" placeholder="Nombre" required>
                     </div>
                     <div class="mb-3">
@@ -45,12 +51,7 @@
                         <label for="tFf" class="form-label">Fin</label>
                         <input type="date" class="form-control mb-2" id="tFf" required>
                     </div>
-                    <div class="mb-3">
-                        <label for="tEmp" class="form-label">Empresa</label>
-                        <select class="form-control mb-2" id="tEmp" required>
-                            <option value="">Empresa...</option>
-                        </select>
-                    </div>
+
                 </div>
                 <div class="modal-footer"><button type="submit" class="btn btn-primary">Guardar</button></div>
             </form>
@@ -63,8 +64,11 @@
         api: '<?= BASE_URL ?>api/temporadas',
         apiE: '<?= BASE_URL ?>api/empresas',
         emps: [],
-        resp: (res) => ({ rows: res.data || [], total: res.data?.length || 0 }),
-        fEmp: (v) => window.t.emps.find(e=>e.id==v)?.nombre || '',
+        resp: (res) => ({
+            rows: res.data || [],
+            total: res.data?.length || 0
+        }),
+        fEmp: (v) => window.t.emps.find(e => e.id == v)?.nombre || '',
         fAcc: (v, x) => {
             let xJ = JSON.stringify(x).replace(/'/g, "&apos;");
             return `<button class="btn btn-sm btn-info" onclick='window.t.edit(${xJ})'>Editar</button>

@@ -68,6 +68,23 @@ class CargaPagosController
         }
     }
 
+    public function historial()
+    {
+        $empresa_id   = (int)($_GET['empresa_id'] ?? 0);
+        $temporada_id = trim($_GET['temporada_id'] ?? '');
+
+        if (!$empresa_id || !$temporada_id) {
+            $this->res(false, 'Faltan parámetros empresa_id y temporada_id.', null, 400);
+        }
+
+        try {
+            $data = $this->m->obtenerHistorialPagos($empresa_id, $temporada_id);
+            $this->res(true, 'OK', $data);
+        } catch (Throwable $e) {
+            $this->res(false, 'Error: ' . $e->getMessage(), null, 500);
+        }
+    }
+
     public function deuda()
     {
         $empresa_id   = (int)($_GET['empresa_id'] ?? 0);

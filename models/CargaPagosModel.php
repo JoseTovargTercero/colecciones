@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../config/Database.php';
 
 class CargaPagosModel
@@ -20,11 +20,12 @@ class CargaPagosModel
         $tipo_pago      = $d['tipo_pago'] ?? '';
         $monto          = (float)($d['monto'] ?? 0);
         $numero_operacion = trim($d['numero_operacion'] ?? '');
+        $fecha_pago     = trim($d['fecha_pago_comprobante'] ?? '');
         $cuota_id       = isset($d['cuota_id']) ? (int)$d['cuota_id'] : null;
         $comprobante    = $this->upload();
 
         if (!$empresa_id || !$temporada_id || !$vendedor_id || !$tipo_pago || $monto <= 0) {
-            throw new Exception('Faltan datos obligatorios o monto inválido.');
+            throw new Exception('Faltan datos obligatorios o monto invÃ¡lido.');
         }
 
         $this->db->begin_transaction();
@@ -32,38 +33,44 @@ class CargaPagosModel
         try {
             // Guardar comprobante primero para obtener el ID
             $stmt = $this->db->prepare(
-                "INSERT INTO comprobantes (empresa_id, temporada_id, vendedor_id, cuota_id, monto, numero_operacion, comprobante)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)"
+                "INSERT INTO comprobantes (empresa_id, temporada_id, vendedor_id, cuota_id, monto, numero_operacion, comprobante, fecha_pago_comprobante)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
             );
-            $stmt->bind_param('ississs', $empresa_id, $temporada_id, $vendedor_id, $cuota_id, $monto, $numero_operacion, $comprobante);
+            $stmt->bind_param('ississss', $empresa_id, $temporada_id, $vendedor_id, $cuota_id, $monto, $numero_operacion, $comprobante, $fecha_pago);
             $stmt->execute();
             $comp_id = $this->db->insert_id;
             $stmt->close();
 
             $comp_str = $comp_id ? (string)$comp_id : null;
 
+            $pagadoATiempo = false;
+
             if ($tipo_pago === 'total') {
-                $this->procesarTotal($empresa_id, $temporada_id, $vendedor_id, $monto, $numero_operacion, $comp_str, $u);
+                $pagadoATiempo = $this->procesarTotal($empresa_id, $temporada_id, $vendedor_id, $monto, $numero_operacion, $comp_str, $u, $fecha_pago);
             } elseif ($tipo_pago === 'cuota_exacta') {
                 if (!$cuota_id) throw new Exception('Debe seleccionar una cuota.');
-                $this->procesarCuotaExacta($cuota_id, $monto, $numero_operacion, $comp_str, $u);
+                $pagadoATiempo = $this->procesarCuotaExacta($cuota_id, $monto, $numero_operacion, $comp_str, $u, $fecha_pago);
             } elseif ($tipo_pago === 'abono') {
-                $this->procesarAbono($empresa_id, $temporada_id, $vendedor_id, $monto, $numero_operacion, $comp_str, $u);
+                $pagadoATiempo = $this->procesarAbono($empresa_id, $temporada_id, $vendedor_id, $monto, $numero_operacion, $comp_str, $u, $fecha_pago);
             } else {
                 throw new Exception('Tipo de pago no implementado.');
             }
 
             $this->db->commit();
-            return ['id' => $comp_id, 'message' => 'Pago registrado correctamente.'];
+
+            $message = 'Pago registrado correctamente.';
+            if ($pagadoATiempo) {
+                $message .= ' El vendedor cumplió con su pago a tiempo.';
+            }
+            return ['id' => $comp_id, 'message' => $message];
         } catch (Exception $e) {
             $this->db->rollback();
             throw $e;
         }
     }
 
-    private function procesarTotal(int $empresa_id, string $temporada_id, int $vendedor_id, float $monto, ?string $numOp, ?string $comprobante, string $u): void
+    private function procesarTotal(int $empresa_id, string $temporada_id, int $vendedor_id, float $monto, ?string $numOp, ?string $comprobante, string $u, ?string $fecha_pago = null): bool
     {
-        // Obtener cuotas pendientes con su ganancia_vendedor
         $stmt = $this->db->prepare(
             "SELECT c.id, c.asignacion_id, c.numero_cuota, c.monto_a_pagar, c.monto_pendiente, c.fecha_pago,
                     ac.ganancia_vendedor
@@ -83,13 +90,11 @@ class CargaPagosModel
             throw new Exception('No hay cuotas pendientes.');
         }
 
-        // Identificar la última cuota de cada asignación
         $lastCuotaPorAsignacion = [];
         foreach ($cuotas as $c) {
             $lastCuotaPorAsignacion[(int)$c['asignacion_id']] = $c;
         }
 
-        // Calcular deuda efectiva (total pendiente - ganancia_vendedor de las últimas cuotas)
         $totalPendiente = 0;
         $totalDescuento = 0;
         foreach ($cuotas as $c) {
@@ -107,13 +112,16 @@ class CargaPagosModel
             throw new Exception("El monto ($monto) no cubre la deuda total efectiva ($deudaEfectiva).");
         }
 
-        // Actualizar cada cuota individualmente
+        $algunaATiempo = false;
+
         foreach ($cuotas as $c) {
             $cuotaId = (int)$c['id'];
             $asigId = (int)$c['asignacion_id'];
             $montoAPagar = (float)$c['monto_a_pagar'];
             $gv = (float)($c['ganancia_vendedor'] ?? 0);
             $esUltima = $lastCuotaPorAsignacion[$asigId]['id'] === $cuotaId;
+            $pagadoATiempo = ($fecha_pago && $fecha_pago <= $c['fecha_pago']) ? 1 : 0;
+            if ($pagadoATiempo) $algunaATiempo = true;
 
             if ($esUltima && $gv > 0) {
                 $nuevoPagado = max(0, $montoAPagar - $gv);
@@ -123,10 +131,11 @@ class CargaPagosModel
                          monto_pendiente = 0,
                          estatus_pago = 'realizado',
                          fecha_pago = CURDATE(),
+                         pagado_a_tiempo = ?,
                          comprobante = IF(? IS NULL, comprobante, IF(comprobante IS NULL OR comprobante = '', ?, CONCAT(comprobante, '|', ?)))
                      WHERE id = ?"
                 );
-                $stmt->bind_param('dsssi', $nuevoPagado, $comprobante, $comprobante, $comprobante, $cuotaId);
+                $stmt->bind_param('disssi', $nuevoPagado, $pagadoATiempo, $comprobante, $comprobante, $comprobante, $cuotaId);
             } else {
                 $stmt = $this->db->prepare(
                     "UPDATE cuotas_coleccion
@@ -134,16 +143,16 @@ class CargaPagosModel
                          monto_pendiente = 0,
                          estatus_pago = 'realizado',
                          fecha_pago = CURDATE(),
+                         pagado_a_tiempo = ?,
                          comprobante = IF(? IS NULL, comprobante, IF(comprobante IS NULL OR comprobante = '', ?, CONCAT(comprobante, '|', ?)))
                      WHERE id = ?"
                 );
-                $stmt->bind_param('sssi', $comprobante, $comprobante, $comprobante, $cuotaId);
+                $stmt->bind_param('isssi', $pagadoATiempo, $comprobante, $comprobante, $comprobante, $cuotaId);
             }
             $stmt->execute();
             $stmt->close();
         }
 
-        // Finalizar asignaciones
         $stmt = $this->db->prepare(
             "UPDATE asignaciones_colecciones
              SET estado = 'finalizada'
@@ -154,13 +163,15 @@ class CargaPagosModel
         $stmt->close();
 
         $this->verificarYCompletarPremios($empresa_id, $temporada_id, $vendedor_id);
+
+        return $algunaATiempo;
     }
 
-    private function procesarCuotaExacta(int $cuota_id, float $monto, ?string $numOp, ?string $comprobante, string $u): void
+    private function procesarCuotaExacta(int $cuota_id, float $monto, ?string $numOp, ?string $comprobante, string $u, ?string $fecha_pago = null): bool
     {
         // Obtener cuota
         $stmt = $this->db->prepare(
-            "SELECT c.id, c.monto_a_pagar, c.monto_pendiente, c.asignacion_id,
+            "SELECT c.id, c.fecha_pago, c.monto_a_pagar, c.monto_pendiente, c.asignacion_id,
                     cc.empresa_id, ac.temporada_id, ac.vendedor_id
              FROM cuotas_coleccion c
              INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
@@ -173,11 +184,13 @@ class CargaPagosModel
         $cuota = $r->fetch_assoc();
         $stmt->close();
 
-        if (!$cuota) throw new Exception('Cuota no encontrada o ya está pagada.');
+        if (!$cuota) throw new Exception('Cuota no encontrada o ya estÃ¡ pagada.');
 
         if ($monto < (float)$cuota['monto_pendiente']) {
             throw new Exception("El monto ($monto) no cubre el pendiente de la cuota ({$cuota['monto_pendiente']}).");
         }
+
+        $pagadoATiempo = ($fecha_pago && $fecha_pago <= $cuota['fecha_pago']) ? 1 : 0;
 
         // Actualizar cuota
         $stmt = $this->db->prepare(
@@ -186,14 +199,15 @@ class CargaPagosModel
                   monto_pendiente = 0,
                   estatus_pago = 'realizado',
                   fecha_pago = CURDATE(),
+                  pagado_a_tiempo = ?,
                   comprobante = IF(? IS NULL, comprobante, IF(comprobante IS NULL OR comprobante = '', ?, CONCAT(comprobante, '|', ?)))
              WHERE id = ?"
         );
-        $stmt->bind_param('sssi', $comprobante, $comprobante, $comprobante, $cuota_id);
+        $stmt->bind_param('isssi', $pagadoATiempo, $comprobante, $comprobante, $comprobante, $cuota_id);
         $stmt->execute();
         $stmt->close();
 
-        // Verificar si todas las cuotas de la asignación están pagadas
+        // Verificar si todas las cuotas de la asignaciÃ³n estÃ¡n pagadas
         $stmt = $this->db->prepare(
             "SELECT COUNT(*) as total, SUM(CASE WHEN estatus_pago = 'realizado' THEN 1 ELSE 0 END) as pagadas
              FROM cuotas_coleccion WHERE asignacion_id = ?"
@@ -212,9 +226,11 @@ class CargaPagosModel
 
             $this->verificarYCompletarPremios((int)$cuota['empresa_id'], $cuota['temporada_id'], (int)$cuota['vendedor_id']);
         }
+
+        return $pagadoATiempo;
     }
 
-    private function procesarAbono(int $empresa_id, string $temporada_id, int $vendedor_id, float $monto, ?string $numOp, ?string $comprobante, string $u): void
+    private function procesarAbono(int $empresa_id, string $temporada_id, int $vendedor_id, float $monto, ?string $numOp, ?string $comprobante, string $u, ?string $fecha_pago = null): bool
     {
         $restante = $monto;
 
@@ -236,7 +252,7 @@ class CargaPagosModel
 
         if (empty($cuotas)) throw new Exception('No hay cuotas pendientes para abonar.');
 
-        // Identificar la última cuota de cada asignación
+        // Identificar la Ãºltima cuota de cada asignaciÃ³n
         $lastCuotaPorAsignacion = [];
         foreach ($cuotas as $c) {
             $lastCuotaPorAsignacion[(int)$c['asignacion_id']] = $c;
@@ -247,6 +263,7 @@ class CargaPagosModel
              SET monto_pagado = ?,
                  monto_pendiente = 0,
                  estatus_pago = 'realizado',
+                 pagado_a_tiempo = ?,
                  comprobante = IF(? IS NULL, comprobante, IF(comprobante IS NULL OR comprobante = '', ?, CONCAT(comprobante, '|', ?)))
              WHERE id = ?"
         );
@@ -261,6 +278,8 @@ class CargaPagosModel
         );
 
         $asignacionesFinalizadas = [];
+
+        $algunaATiempo = false;
 
         foreach ($cuotas as $cuota) {
             if ($restante <= 0) break;
@@ -278,7 +297,9 @@ class CargaPagosModel
                 $pagadoAhora = $pendienteEfectivo;
                 $restante -= $pagadoAhora;
                 $nuevoPagado = $montoAPagar - $descuento;
-                $stmtFull->bind_param('dsssi', $nuevoPagado, $comprobante, $comprobante, $comprobante, $cuotaId);
+                $pagadoATiempo = ($fecha_pago && $fecha_pago <= $cuota['fecha_pago']) ? 1 : 0;
+                if ($pagadoATiempo) $algunaATiempo = true;
+                $stmtFull->bind_param('disssi', $nuevoPagado, $pagadoATiempo, $comprobante, $comprobante, $comprobante, $cuotaId);
                 $stmtFull->execute();
 
                 if (!isset($asignacionesFinalizadas[$asigId])) {
@@ -295,7 +316,7 @@ class CargaPagosModel
         $stmtFull->close();
         $stmtPartial->close();
 
-        // Finalizar asignaciones donde todas las cuotas estén pagadas
+        // Finalizar asignaciones donde todas las cuotas estÃ©n pagadas
         foreach ($asignacionesFinalizadas as $asigId => $pagadas) {
             $stmt = $this->db->prepare(
                 "SELECT COUNT(*) as total, SUM(CASE WHEN estatus_pago = 'realizado' THEN 1 ELSE 0 END) as pagadas
@@ -316,6 +337,8 @@ class CargaPagosModel
         }
 
         $this->verificarYCompletarPremios($empresa_id, $temporada_id, $vendedor_id);
+
+        return $algunaATiempo;
     }
 
     private function upload(): ?string
@@ -378,7 +401,7 @@ class CargaPagosModel
     public function obtenerComprobantesVendedor(int $empresa_id, string $temporada_id, int $vendedor_id): array
     {
         $stmt = $this->db->prepare(
-            "SELECT cp.id, cp.cuota_id, cp.monto, cp.numero_operacion, cp.comprobante, cp.created_at,
+            "SELECT cp.id, cp.cuota_id, cp.monto, cp.numero_operacion, cp.comprobante, cp.fecha_pago_comprobante, cp.created_at,
                     c.numero_cuota
              FROM comprobantes cp
              INNER JOIN cuotas_coleccion c ON cp.cuota_id = c.id
@@ -433,7 +456,7 @@ class CargaPagosModel
                 "UPDATE premios_solicitados
                  SET status = 'completado'
                  WHERE empresa_id = ? AND temporada_id = ? AND vendedor_id = ?
-                 AND status IN ('solicitado', 'pendiente')"
+                 AND status = 'pendiente'"
             );
             $stmt->bind_param('isi', $empresa_id, $temporada_id, $vendedor_id);
             $stmt->execute();
@@ -443,14 +466,14 @@ class CargaPagosModel
 
     public function obtenerPremiosVendedor(int $empresa_id, string $temporada_id, int $vendedor_id): array
     {
-        // Prevenir error si la tabla no ha sido creada aún
+        // Prevenir error si la tabla no ha sido creada aÃºn
         $this->db->query("CREATE TABLE IF NOT EXISTS premios_solicitados (
             id INT AUTO_INCREMENT PRIMARY KEY,
             vendedor_id INT NOT NULL,
             empresa_id INT NOT NULL,
             temporada_id INT NOT NULL,
             premio_id INT NOT NULL,
-            status VARCHAR(50) DEFAULT 'solicitado',
+            status VARCHAR(50) DEFAULT 'pendiente',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )");
 
@@ -469,3 +492,6 @@ class CargaPagosModel
         return $rows;
     }
 }
+
+
+

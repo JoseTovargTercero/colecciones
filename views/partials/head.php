@@ -36,6 +36,5 @@
     const BASE_URL = "<?= BASE_URL ?>";
 </script>
 
-
 <!-- sweetalert2 -->
 <script src="<?= BASE_URL ?>public/assets/js/sweetalert2.all.min.js"></script>

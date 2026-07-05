@@ -78,3 +78,89 @@
   height: 500px !important;
   object-fit: contain;
 }
+
+/* ── field-tooltip ──────────────────────────────────────────────────────────
+   Uso:
+   <label class="form-label">
+     Nombre del campo
+     <span class="field-tooltip">
+       <span class="field-tooltip__icon">?</span>
+       <span class="field-tooltip__text">Descripcion del campo aqui.</span>
+     </span>
+   </label>
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.field-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+
+.field-tooltip__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  background: transparent;
+  border: 1.5px solid #696cff;
+  color: #696cff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  font-style: normal;
+  line-height: 1;
+  cursor: default;
+  transition: background 0.18s, color 0.18s;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.field-tooltip:hover .field-tooltip__icon,
+.field-tooltip:focus-within .field-tooltip__icon {
+  background: #696cff;
+  color: #fff;
+}
+
+.field-tooltip__text {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: 220px;
+  background: #2d2f45;
+  color: #e8e9f5;
+  font-size: 0.775rem;
+  font-weight: 400;
+  line-height: 1.5;
+  padding: 0.55rem 0.75rem;
+  border-radius: 7px;
+  border: 1px solid rgba(105, 108, 255, 0.30);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+  white-space: normal;
+  z-index: 1080;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+/* Flecha del globo */
+.field-tooltip__text::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #2d2f45;
+}
+
+.field-tooltip:hover .field-tooltip__text,
+.field-tooltip:focus-within .field-tooltip__text {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
