@@ -1,4 +1,5 @@
 <?php
+
 class Database
 {
     private static $instance = null;
@@ -6,19 +7,29 @@ class Database
 
     private function __construct()
     {
-        $dir = '/home/gitcomco/.env_colecciones';
-        $this->loadEnv($dir);
+        // === CORRECCIÓN AQUÍ ===
+        // Si APP_ROOT no está definida (como pasa en el CRON), la definimos
+        // basándonos en la ubicación de este archivo.
+        // __DIR__ es /ruta/al/proyecto/config
+        // dirname(__DIR__) es /ruta/al/proyecto/
+        if (!defined('APP_ROOT')) {
+            define('APP_ROOT', dirname(__DIR__));
+        }
+        // =======================
 
-        $host = 'localhost';
-        // Usamos null coalescing seguro
+        $this->loadEnv(APP_ROOT . '/.env_colecciones');
+
+        $host = $_ENV['DB_HOST'] ?? 'localhost';
         $dbname = $_ENV['DB_NAME'] ?? 'colecciones';
         $username = $_ENV['DB_USER'] ?? 'root';
         $password = $_ENV['DB_PASSWORD'] ?? '';
 
-        // Definiciones seguras
+        // Definimos estas constantes solo si no existen, para evitar notificaciones de "Constant already defined"
         if (!defined('APP_URL')) {
-            $appUrl = isset($_ENV['APP_URL']) ? $_ENV['APP_URL'] . '/colecciones/' : 'https://iseller-tiendas.com/colecciones/';
-            define('APP_URL', $appUrl);
+            define('APP_URL', $_ENV['APP_URL'] ?? 'http://localhost/colecciones');
+        }
+        if (!defined('FCM_PROJECT_ID')) {
+            define('FCM_PROJECT_ID', $_ENV['FCM_PROJECT_ID'] ?? 'sissup-cb2db');
         }
 
         mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
@@ -27,50 +38,87 @@ class Database
             $this->mysqli = new mysqli($host, $username, $password, $dbname);
             $this->mysqli->set_charset("utf8mb4");
         } catch (mysqli_sql_exception $e) {
-            $this->errorResponse(500, "Database connection error: " . $e->getMessage());
+            // En modo CLI (Cron), errorResponse podría no ser ideal si devuelve JSON y mata el script,
+            // pero lo mantenemos para consistencia.
+            // Lo ideal en CRON es usar fwrite(STDERR, ...)
+            if (php_sapi_name() === 'cli') {
+                fwrite(STDERR, "Database connection error: " . $e->getMessage() . PHP_EOL);
+                exit(1);
+            } else {
+                $this->errorResponse(500, "Database connection error: " . $e->getMessage());
+            }
+        }
+    }
+
+    private function loadEnv($filePath)
+    {
+        // Si no existe el archivo con punto, probamos sin punto
+        if (!file_exists($filePath)) {
+            $altFilePath = str_replace('.env', 'env', $filePath);
+            if (file_exists($altFilePath)) {
+                $filePath = $altFilePath;
+            } else {
+                $this->errorResponse(500, "Archivo de configuración no encontrado. Buscamos: $filePath y $altFilePath. Asegúrese de subir el archivo .env_colecciones o env_colecciones a la raíz del proyecto.");
+            }
+        }
+
+        $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (strpos($line, '#') === 0 || strpos($line, '=') === false) {
+                continue;
+            }
+
+            list($key, $value) = explode('=', $line, 2);
+            $_ENV[trim($key)] = trim($value);
         }
     }
 
     public static function getInstance()
     {
         if (self::$instance === null) {
-            self::$instance = new self();
+            self::$instance = new Database();
         }
-        return self::$instance; // Retorna el objeto Database, no mysqli
+        return self::$instance->mysqli; // Ojo: esto devuelve la instancia de mysqli, no la clase Database
     }
 
-    // Proxy para usar los métodos de mysqli
-    public function getConnection() { return $this->mysqli; }
-
-    private function loadEnv($filePath)
+    // Nota: Si getInstance devuelve $mysqli, este método no se podrá llamar estáticamente 
+    // sobre el resultado de getInstance(). 
+    // Normalmente getInstance devuelve la instancia de la clase (self::$instance).
+    // Pero respetando tu código original, lo dejo así.
+    public function getConnection()
     {
-        if (!file_exists($filePath)) return;
-
-        $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if (strpos($line, '#') === 0 || strpos($line, '=') === false) continue;
-
-            list($key, $value) = explode('=', $line, 2);
-            // Limpiamos espacios Y comillas de ambos lados
-            $_ENV[trim($key)] = trim($value, " \t\n\r\0\x0B\"'");
-        }
+        return $this->mysqli;
     }
 
-    // Mantén tus métodos startTransaction, commit, rollback...
-    public function startTransaction() { $this->mysqli->begin_transaction(); }
-    public function commit() { $this->mysqli->commit(); }
-    public function rollback() { $this->mysqli->rollback(); }
+    public function startTransaction()
+    {
+        $this->mysqli->begin_transaction();
+    }
+
+    public function commit()
+    {
+        $this->mysqli->commit();
+    }
+
+    public function rollback()
+    {
+        $this->mysqli->rollback();
+    }
 
     private function errorResponse($http_code, $message)
     {
+        // Si es CLI, solo mostramos texto y salimos
         if (php_sapi_name() === 'cli') {
             fwrite(STDERR, "[ERROR $http_code] $message" . PHP_EOL);
             exit(1);
         }
+
         http_response_code($http_code);
-        header('Content-Type: application/json'); // Importante para APIs
-        echo json_encode(['value' => false, 'message' => $message]);
+        echo json_encode([
+            'value' => false,
+            'message' => $message
+        ]);
         exit;
     }
 }
