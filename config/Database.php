@@ -17,7 +17,7 @@ class Database
         }
         // =======================
 
-        $dir = __DIR__ . '/../../.env_colecciones';
+        $dir = __DIR__ . '/../../../.env_colecciones';
         $this->loadEnv($dir);
 
 
