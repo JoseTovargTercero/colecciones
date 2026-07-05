@@ -3,6 +3,69 @@
 <!-- Tutorial Floating Component -->
 <div id="tutorialOverlay" style="display:none"></div>
 
+<!-- Global POST Loader -->
+<div id="globalLoader" style="display:none">
+    <div id="glBackdrop"></div>
+    <div id="glCard">
+        <div id="glRing"><div id="glRingInner"></div></div>
+        <div id="glText">Guardando...</div>
+        <div id="glDots"><span></span><span></span><span></span></div>
+    </div>
+</div>
+
+<style>
+#globalLoader { position:fixed; inset:0; z-index:999999; display:flex; align-items:center; justify-content:center; }
+#glBackdrop { position:absolute; inset:0; background:rgba(10,10,30,.45); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); transition:opacity .3s; }
+#glCard { position:relative; display:flex; flex-direction:column; align-items:center; gap:18px; padding:44px 56px 40px; background:rgba(255,255,255,.92); border-radius:28px; box-shadow:0 24px 80px rgba(0,0,0,.16),0 0 0 1px rgba(255,255,255,.08) inset; animation:glIn .38s cubic-bezier(.22,1,.36,1) both; }
+@keyframes glIn { from { opacity:0; transform:translateY(18px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+#glRing { width:48px; height:48px; border-radius:50%; background:conic-gradient(from 0deg,#696cff,#a594f9,#696cff); animation:glSpin .9s linear infinite; display:flex; align-items:center; justify-content:center; }
+#glRingInner { width:36px; height:36px; border-radius:50%; background:#fff; }
+@keyframes glSpin { to { transform:rotate(360deg); } }
+#glText { font-size:.9375rem; font-weight:600; color:#1a1f36; letter-spacing:.01em; }
+#glDots { display:flex; gap:5px; }
+#glDots span { width:6px; height:6px; border-radius:50%; background:#696cff; animation:glDot 1.1s ease-in-out infinite; }
+#glDots span:nth-child(2) { animation-delay:.2s; }
+#glDots span:nth-child(3) { animation-delay:.4s; }
+@keyframes glDot { 0%,80%,100% { opacity:.2; transform:scale(.7); } 40% { opacity:1; transform:scale(1); } }
+</style>
+
+<script>
+(function(){
+    let loaderCount = 0;
+    const loader = document.getElementById('globalLoader');
+    function showLoader() {
+        loaderCount++;
+        if (loaderCount > 1) return;
+        loader.style.display = '';
+    }
+    function hideLoader() {
+        loaderCount--;
+        if (loaderCount > 0) return;
+        loader.style.display = 'none';
+    }
+
+    const origFetch = window.fetch;
+    window.fetch = function(u, opts) {
+        opts = opts || {};
+        const method = (opts.method || 'GET').toUpperCase();
+        if (method !== 'GET') showLoader();
+        return origFetch.call(this, u, opts).finally(function(){ if (method !== 'GET') hideLoader(); });
+    };
+
+    const origOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(m, u) {
+        this._glMethod = m.toUpperCase();
+        return origOpen.apply(this, arguments);
+    };
+    const origSend = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.send = function() {
+        if (this._glMethod && this._glMethod !== 'GET') showLoader();
+        this.addEventListener('loadend', function(){ if (this._glMethod && this._glMethod !== 'GET') hideLoader(); });
+        return origSend.apply(this, arguments);
+    };
+})();
+</script>
+
 <script>
     // Carga diferida de lottie-player solo cuando el tutorial va a mostrarse
     function loadLottiePlayer(cb) {
