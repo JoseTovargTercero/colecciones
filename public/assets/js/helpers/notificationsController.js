@@ -20,10 +20,10 @@ const NotificationController = {
     this._bindEvents()
 
     // Carga inicial de *solo los contadores*
-    this.checkNewCounts()
+   // this.checkNewCounts()
 
     // Sondeo (polling) de *solo los contadores* cada 30 segundos
-    setInterval(() => this.checkNewCounts(), 3000)
+    //setInterval(() => this.checkNewCounts(), 3000)
   },
 
   _cacheDOMElements() {
