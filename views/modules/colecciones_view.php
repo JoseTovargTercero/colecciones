@@ -272,28 +272,38 @@
             let i = document.getElementById('cId')?.value || '',
                 t = document.getElementById('cTipo')?.value || '';
 
-            let fd = new FormData();
-            fd.append('nombre', document.getElementById('cNombre')?.value || '');
-            fd.append('tipo', t);
-            fd.append('precio_base', document.getElementById('cPb')?.value || '');
-            fd.append('ganancia_vendedor', document.getElementById('cGv')?.value || '');
-            fd.append('precio_venta_vendedor', t == 'combo' ? (document.getElementById('cPb')?.value || '') : (document.getElementById('cPvv')?.value || ''));
-            fd.append('foto_actual', document.getElementById('cFotoActual')?.value || '');
-
-            if (!i) {
-                fd.append('empresa_id', document.getElementById('cEmp')?.value || '');
-            }
-
-            // Reemplazo nativo de $('#cFoto')[0].files[0]
             const cFotoInput = document.getElementById('cFoto');
-            if (cFotoInput && cFotoInput.files && cFotoInput.files[0]) {
+            const hasFile = cFotoInput && cFotoInput.files && cFotoInput.files[0];
+
+            let body, headers = {};
+            if (hasFile) {
+                let fd = new FormData();
+                fd.append('nombre', document.getElementById('cNombre')?.value || '');
+                fd.append('tipo', t);
+                fd.append('precio_base', document.getElementById('cPb')?.value || '');
+                fd.append('ganancia_vendedor', document.getElementById('cGv')?.value || '');
+                fd.append('precio_venta_vendedor', t == 'combo' ? (document.getElementById('cPb')?.value || '') : (document.getElementById('cPvv')?.value || ''));
+                fd.append('foto_actual', document.getElementById('cFotoActual')?.value || '');
+                if (!i) fd.append('empresa_id', document.getElementById('cEmp')?.value || '');
                 fd.append('foto', cFotoInput.files[0]);
+                body = fd;
+            } else {
+                headers['Content-Type'] = 'application/json';
+                body = JSON.stringify({
+                    nombre: document.getElementById('cNombre')?.value || '',
+                    tipo: t,
+                    precio_base: document.getElementById('cPb')?.value || '',
+                    ganancia_vendedor: document.getElementById('cGv')?.value || '',
+                    precio_venta_vendedor: t == 'combo' ? (document.getElementById('cPb')?.value || '') : (document.getElementById('cPvv')?.value || ''),
+                    foto_actual: document.getElementById('cFotoActual')?.value || '',
+                    ...(i ? {} : { empresa_id: document.getElementById('cEmp')?.value || '' })
+                });
             }
 
-            // Se mantiene POST ya que viaja un archivo vía FormData
             await fetch(this.api + (i ? '/' + i : ''), {
                 method: 'POST',
-                body: fd
+                headers,
+                body
             });
 
             const modalEl = document.getElementById('cModal');
