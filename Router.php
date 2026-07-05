@@ -104,9 +104,9 @@ class Router
                         }
                         return;
                     } catch (Exception $e) {
-                        header("HTTP/1.1 500 Internal Server Error");
-                        error_log($e->getMessage());
-                        echo "Error en el servidor: " . $e->getMessage();
+                        http_response_code(500);
+                        header('Content-Type: application/json');
+                        echo json_encode(['value' => false, 'message' => $e->getMessage()]);
                         return;
                     }
                 }

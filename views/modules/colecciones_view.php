@@ -300,17 +300,25 @@
                 });
             }
 
-            await fetch(this.api + (i ? '/' + i : ''), {
+            const resp = await fetch(this.api + (i ? '/' + i : ''), {
                 method: 'POST',
                 headers,
                 body
             });
-
-            const modalEl = document.getElementById('cModal');
-            if (modalEl) {
-                bootstrap.Modal.getInstance(modalEl).hide();
+            let msg;
+            try {
+                const json = await resp.json();
+                if (json.value) {
+                    const modalEl = document.getElementById('cModal');
+                    if (modalEl) bootstrap.Modal.getInstance(modalEl).hide();
+                    this.load();
+                    return;
+                }
+                msg = json.message;
+            } catch (_) {
+                msg = await resp.text() || 'Error desconocido';
             }
-            this.load();
+            alert('Error: ' + msg);
         },
         async del(i) {
             if (!confirm('¿Borrar?')) return;
