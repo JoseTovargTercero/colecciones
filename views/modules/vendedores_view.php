@@ -157,15 +157,24 @@
                 telefono: document.getElementById('vTelefono').value,
                 nivel: document.getElementById('vNivel').value
             };
-            await fetch(this.api + (i ? '/' + i : ''), {
+            const resp = await fetch(this.api + (i ? '/' + i : ''), {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(b)
             });
-            bootstrap.Modal.getInstance(document.getElementById('vModal')).hide();
-            $('#vTabla').bootstrapTable('refresh');
+            let msg;
+            try {
+                const json = await resp.json();
+                if (json.value) {
+                    bootstrap.Modal.getInstance(document.getElementById('vModal')).hide();
+                    $('#vTabla').bootstrapTable('refresh');
+                    return;
+                }
+                msg = json.message;
+            } catch (_) {
+                msg = await resp.text() || 'Error desconocido';
+            }
+            alert('Error: ' + msg);
         },
         async del(i) {
             if (!confirm('¿Borrar?')) return;

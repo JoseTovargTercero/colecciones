@@ -31,27 +31,20 @@ class PremioController {
         catch (Throwable $e) { $this->res(false, $e->getMessage(), null, 500); }
     }
     public function crear() {
-        try {
-            $d = $_POST;
-            if (empty($d)) $d = json_decode(file_get_contents('php://input'), true) ?: [];
-            $foto = $this->upload();
-            if ($foto) $d['foto'] = $foto;
-            $this->res(true, 'OK', ['id' => $this->m->crear($d)], 201);
-        }
-        catch (Throwable $e) { $this->res(false, $e->getMessage(), null, 400); }
+        $d = $_POST;
+        if (empty($d)) $d = json_decode(file_get_contents('php://input'), true) ?: [];
+        $foto = $this->upload();
+        if ($foto) $d['foto'] = $foto;
+        $this->res(true, 'OK', ['id' => $this->m->crear($d)], 201);
     }
     public function actualizar($p) {
-        if (!($id = $p['id'] ?? '')) $this->res(false, 'ID req', null, 400);
-        try {
-            $d = $_POST;
-            if (empty($d)) $d = json_decode(file_get_contents('php://input'), true) ?: [];
-            $foto = $this->upload();
-            if ($foto) $d['foto'] = $foto; 
-            if (!$foto && !empty($d['foto_actual'])) $d['foto'] = $d['foto_actual'];
-
-            $this->res(true, 'OK', ['ok' => $this->m->actualizar($id, $d)]);
-        }
-        catch (Throwable $e) { $this->res(false, $e->getMessage(), null, 400); }
+        $id = $p['id'] ?? '';
+        $d = $_POST;
+        if (empty($d)) $d = json_decode(file_get_contents('php://input'), true) ?: [];
+        $foto = $this->upload();
+        if ($foto) $d['foto'] = $foto; 
+        if (!$foto && !empty($d['foto_actual'])) $d['foto'] = $d['foto_actual'];
+        $this->res(true, 'OK', ['ok' => $this->m->actualizar($id, $d)]);
     }
     public function eliminar($p) {
         if (!($id = $p['id'] ?? '')) $this->res(false, 'ID req', null, 400);

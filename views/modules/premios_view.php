@@ -125,17 +125,42 @@ window.p = {
     async save(e) {
         e.preventDefault();
         let i = document.getElementById('pId').value;
-        let fd = new FormData();
-        fd.append('nombre', document.getElementById('pNombre').value);
-        fd.append('valor', document.getElementById('pValor').value);
-        fd.append('foto_actual', document.getElementById('pFotoActual').value);
-        if(!i) fd.append('empresa_id', document.getElementById('pEmp').value);
-        let f = document.getElementById('pFoto').files[0];
-        if(f) fd.append('foto', f);
+        const fInput = document.getElementById('pFoto');
+        const hasFile = fInput && fInput.files && fInput.files[0];
 
-        await fetch(this.api+(i?'/'+i:''), {method:'POST', body:fd});
-        bootstrap.Modal.getInstance(document.getElementById('pModal')).hide();
-        this.load();
+        let body, headers = {};
+        if (hasFile) {
+            let fd = new FormData();
+            fd.append('nombre', document.getElementById('pNombre').value);
+            fd.append('valor', document.getElementById('pValor').value);
+            fd.append('foto_actual', document.getElementById('pFotoActual').value);
+            if (!i) fd.append('empresa_id', document.getElementById('pEmp').value);
+            fd.append('foto', fInput.files[0]);
+            body = fd;
+        } else {
+            headers['Content-Type'] = 'application/json';
+            body = JSON.stringify({
+                nombre: document.getElementById('pNombre').value,
+                valor: document.getElementById('pValor').value,
+                foto_actual: document.getElementById('pFotoActual').value,
+                ...(i ? {} : { empresa_id: document.getElementById('pEmp').value })
+            });
+        }
+
+        const resp = await fetch(this.api + (i ? '/' + i : ''), { method: 'POST', headers, body });
+        let msg;
+        try {
+            const json = await resp.json();
+            if (json.value) {
+                bootstrap.Modal.getInstance(document.getElementById('pModal')).hide();
+                this.load();
+                return;
+            }
+            msg = json.message;
+        } catch (_) {
+            msg = await resp.text() || 'Error desconocido';
+        }
+        alert('Error: ' + msg);
     },
     async del(i) {
         if(!confirm('¿Borrar?')) return;
