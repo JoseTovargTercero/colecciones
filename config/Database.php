@@ -22,7 +22,7 @@ class Database
         $host = $_ENV['DB_HOST'] ?? 'localhost';
         $dbname = $_ENV['DB_NAME'] ?? 'colecciones';
         $username = $_ENV['DB_USER'] ?? 'root';
-        $password = $_ENV['DB_PASSWORD'] ?? '';
+        $password = $_ENV['DB_PASS'] ?? '';
 
         // Definimos estas constantes solo si no existen, para evitar notificaciones de "Constant already defined"
         if (!defined('APP_URL')) {
@@ -57,6 +57,7 @@ class Database
             $altFilePath = str_replace('.env', 'env', $filePath);
             if (file_exists($altFilePath)) {
                 $filePath = $altFilePath;
+                echo 'encontrado'
             } else {
                 $this->errorResponse(500, "Archivo de configuración no encontrado. Buscamos: $filePath y $altFilePath. Asegúrese de subir el archivo .env_colecciones o env_colecciones a la raíz del proyecto.");
             }
