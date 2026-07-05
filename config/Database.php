@@ -59,7 +59,7 @@ class Database
     {
         // Si no existe el archivo con punto, probamos sin punto
         if (!file_exists($filePath)) {
-            $altFilePath = str_replace('.env', 'env', $filePath);
+            $altFilePath = str_replace('.env_colecciones', 'env_colecciones', $filePath);
             if (file_exists($altFilePath)) {
                 $filePath = $altFilePath;
             } else {
