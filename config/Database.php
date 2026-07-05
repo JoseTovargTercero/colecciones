@@ -57,7 +57,6 @@ class Database
             $altFilePath = str_replace('.env', 'env', $filePath);
             if (file_exists($altFilePath)) {
                 $filePath = $altFilePath;
-                echo 'encontrado'
             } else {
                 $this->errorResponse(500, "Archivo de configuración no encontrado. Buscamos: $filePath y $altFilePath. Asegúrese de subir el archivo .env_colecciones o env_colecciones a la raíz del proyecto.");
             }
