@@ -19,10 +19,10 @@ class Database
 
         $this->loadEnv(APP_ROOT . '/.env');
 
-        $host = $_ENV['zDB_HOST'] ?? 'localhost';
-        $dbname = $_ENV['zDB_NAME'] ?? 'colecciones';
-        $username = $_ENV['zDB_USER'] ?? 'root';
-        $password = $_ENV['zDB_PASSWORD'] ?? '';
+        $host = 'localhost';
+        $dbname = $_ENV['DB_NAME'] ?? 'colecciones';
+        $username = $_ENV['DB_USER'] ?? 'root';
+        $password = $_ENV['DB_PASSWORD'] ?? '';
 
         // Definimos estas constantes solo si no existen, para evitar notificaciones de "Constant already defined"
         if (!defined('APP_URL')) {
