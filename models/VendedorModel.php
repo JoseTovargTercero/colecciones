@@ -25,17 +25,31 @@ class VendedorModel {
         $this->fill($d);
         $u = $_SESSION['user_id'] ?? '';
         
-        $stmt = $this->db->prepare("INSERT INTO vendedores (nombre, cedula, telefono, nivel, created_at, usuario_id) VALUES (?, ?, ?, ?, NOW(), ?)");
-        $stmt->bind_param('sssis', $d['nombre'], $d['cedula'], $d['telefono'], $d['nivel'], $u);
-        $stmt->execute();
+        try {
+            $stmt = $this->db->prepare("INSERT INTO vendedores (nombre, cedula, telefono, nivel, created_at, usuario_id) VALUES (?, ?, ?, ?, NOW(), ?)");
+            $stmt->bind_param('sssis', $d['nombre'], $d['cedula'], $d['telefono'], $d['nivel'], $u);
+            $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            if ($e->getCode() === 1062) {
+                throw new Exception('Ya existe un vendedor con la cédula ' . $d['cedula']);
+            }
+            throw $e;
+        }
         return (string)$this->db->insert_id;
     }
 
     public function actualizar(string $id, array $d): bool {
         $this->fill($d);
-        $stmt = $this->db->prepare("UPDATE vendedores SET nombre=?, cedula=?, telefono=?, nivel=? WHERE id=?");
-        $stmt->bind_param('sssis', $d['nombre'], $d['cedula'], $d['telefono'], $d['nivel'], $id);
-        $stmt->execute();
+        try {
+            $stmt = $this->db->prepare("UPDATE vendedores SET nombre=?, cedula=?, telefono=?, nivel=? WHERE id=?");
+            $stmt->bind_param('sssis', $d['nombre'], $d['cedula'], $d['telefono'], $d['nivel'], $id);
+            $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            if ($e->getCode() === 1062) {
+                throw new Exception('Ya existe un vendedor con la cédula ' . $d['cedula']);
+            }
+            throw $e;
+        }
         return $stmt->affected_rows > 0;
     }
 

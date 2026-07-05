@@ -160,7 +160,7 @@ window.p = {
         } catch (_) {
             msg = await resp.text() || 'Error desconocido';
         }
-        alert('Error: ' + msg);
+        Swal.fire({ icon: 'error', title: 'Error', text: msg });
     },
     async del(i) {
         if(!confirm('¿Borrar?')) return;
