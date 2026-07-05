@@ -17,7 +17,7 @@ class Database
         }
         // =======================
 
-        $this->loadEnv(APP_ROOT . '/.env_colecciones');
+        $this->loadEnv(APP_ROOT . '../../.env_colecciones');
         echo APP_ROOT;
 
         $host = 'localhost';
