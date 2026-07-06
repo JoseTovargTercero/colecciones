@@ -17,6 +17,7 @@
                 <thead><tr>
                     <th data-field="foto" data-formatter="window.p.fFoto">Foto</th>
                     <th data-field="nombre" data-sortable="true">Nombre</th>
+                    <th data-field="tipo" data-formatter="window.p.fTipo">Tipo</th>
                     <th data-field="valor" data-sortable="true" data-formatter="window.p.fVal">Valor</th>
                     <th data-formatter="window.p.fAcc">Acciones</th>
                 </tr></thead>
@@ -48,6 +49,14 @@
                 <label for="pValor" class="form-label">Valor</label>
                 <input type="number" step="0.01" class="form-control" id="pValor" placeholder="0.00" required>
             </div>
+            <div class="mb-2">
+                <label for="pTipo" class="form-label">Tipo</label>
+                <select class="form-control" id="pTipo">
+                    <option value="">Seleccionar...</option>
+                    <option value="comprado">Comprado</option>
+                    <option value="incentivo">Incentivo</option>
+                </select>
+            </div>
         </div>
         <div class="modal-footer"><button type="submit" class="btn btn-primary">Guardar</button></div>
     </form>
@@ -66,6 +75,11 @@ window.p = {
     },
     fFoto: (v) => v ? `<img src="<?= BASE_URL ?>${v}" width="50">` : 'Sin foto',
     fVal: (v) => `$${v}`,
+    fTipo: (v) => {
+        if (!v) return '<span class="badge bg-soft-secondary">—</span>';
+        const map = { comprado: 'bg-soft-info text-info', incentivo: 'bg-soft-warning text-warning' };
+        return `<span class="badge ${map[v] || 'bg-soft-secondary'}">${v}</span>`;
+    },
     fAcc: (v, x) => {
         let xJ = JSON.stringify(x).replace(/'/g, "&apos;");
         return `<button class="btn btn-sm btn-info" onclick='window.p.edit(${xJ})'>Editar</button>
@@ -106,6 +120,7 @@ window.p = {
         document.getElementById('pId').value = '';
         document.getElementById('pFotoActual').value = '';
         document.getElementById('pEmp').disabled = false;
+        document.getElementById('pTipo').value = '';
         const active = document.querySelector('#pTabs .nav-link.active');
         if (active && active.getAttribute('data-empresa')) {
             document.getElementById('pEmp').value = active.getAttribute('data-empresa');
@@ -120,6 +135,7 @@ window.p = {
         document.getElementById('pNombre').value = x.nombre;
         document.getElementById('pFoto').value = '';
         document.getElementById('pValor').value = x.valor;
+        document.getElementById('pTipo').value = x.tipo || '';
         new bootstrap.Modal(document.getElementById('pModal')).show();
     },
     async save(e) {
@@ -129,10 +145,12 @@ window.p = {
         const hasFile = fInput && fInput.files && fInput.files[0];
 
         let body, headers = {};
+        const tipo = document.getElementById('pTipo').value || null;
         if (hasFile) {
             let fd = new FormData();
             fd.append('nombre', document.getElementById('pNombre').value);
             fd.append('valor', document.getElementById('pValor').value);
+            fd.append('tipo', tipo);
             fd.append('foto_actual', document.getElementById('pFotoActual').value);
             if (!i) fd.append('empresa_id', document.getElementById('pEmp').value);
             fd.append('foto', fInput.files[0]);
@@ -142,6 +160,7 @@ window.p = {
             body = JSON.stringify({
                 nombre: document.getElementById('pNombre').value,
                 valor: document.getElementById('pValor').value,
+                tipo,
                 foto_actual: document.getElementById('pFotoActual').value,
                 ...(i ? {} : { empresa_id: document.getElementById('pEmp').value })
             });

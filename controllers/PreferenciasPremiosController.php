@@ -57,23 +57,50 @@ class PreferenciasPremiosController
         }
     }
 
+    public function pagosTiempoCuotas()
+    {
+        $vendedor_id  = (int)($_GET['vendedor_id'] ?? 0);
+        $empresa_id   = (int)($_GET['empresa_id'] ?? 0);
+        $temporada_id = trim($_GET['temporada_id'] ?? '');
+        if (!$vendedor_id || !$empresa_id || !$temporada_id) {
+            $this->res(false, 'Faltan parámetros.', null, 400);
+        }
+        try {
+            $data = $this->m->pagosTiempoCuotas($vendedor_id, $empresa_id, $temporada_id);
+            $this->res(true, 'OK', $data);
+        } catch (Throwable $e) {
+            $this->res(false, 'Error: ' . $e->getMessage(), null, 500);
+        }
+    }
+
     public function asignarPremios()
     {
-        $empresa_id   = (int)($_POST['empresa_id'] ?? 0);
-        $temporada_id = trim($_POST['temporada_id'] ?? '');
-        $vendedor_id  = (int)($_POST['vendedor_id'] ?? 0);
-        $premio_ids   = $_POST['premio_ids'] ?? [];
-        $u = $_SESSION['user_id'] ?? '';
-        if (!$empresa_id || !$temporada_id || !$vendedor_id || empty($premio_ids)) {
+        $raw = file_get_contents('php://input') ?: '';
+        $in = json_decode($raw, true) ?: [];
+
+        $empresa_id   = (int)($in['empresa_id'] ?? 0);
+        $temporada_id = trim($in['temporada_id'] ?? '');
+        $vendedor_id  = (int)($in['vendedor_id'] ?? 0);
+        $asignaciones = $in['asignaciones'] ?? [];
+        if (!$empresa_id || !$temporada_id || !$vendedor_id || empty($asignaciones)) {
             $this->res(false, 'Faltan datos obligatorios.', null, 400);
         }
 
-        if (!is_array($premio_ids)) $premio_ids = [$premio_ids];
-        $premio_ids = array_map('intval', $premio_ids);
+        if (!is_array($asignaciones)) $asignaciones = [];
 
         try {
-            $this->m->asignarPremiosPagosTiempo($empresa_id, $temporada_id, $vendedor_id, $premio_ids, $u);
+            $this->m->asignarPremiosPagosTiempo($empresa_id, $temporada_id, $vendedor_id, $asignaciones);
             $this->res(true, 'Premio(s) asignado(s) correctamente.', null, 201);
+        } catch (Throwable $e) {
+            $this->res(false, 'Error: ' . $e->getMessage(), null, 500);
+        }
+    }
+
+    public function historial()
+    {
+        try {
+            $data = $this->m->historial();
+            $this->res(true, 'OK', $data);
         } catch (Throwable $e) {
             $this->res(false, 'Error: ' . $e->getMessage(), null, 500);
         }

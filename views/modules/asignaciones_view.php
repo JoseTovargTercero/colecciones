@@ -412,11 +412,11 @@
 
         onEmpresaChange() {
             const empId = document.getElementById('aEmpresa').value;
-            const emp = this.empresas.find(e => e.id === empId);
+            const emp = this.empresas.find(e => e.id == empId);
             this.cfgCuotas = emp || null;
             this.diasRetraso = emp ? (parseInt(emp.dias_retraso_permitido) || 3) : 3;
 
-            const cols = this.colecciones.filter(c => c.empresa_id === empId);
+            const cols = this.colecciones.filter(c => c.empresa_id == empId);
             this._fillSelect('aColeccion', cols, c => ({
                 v: c.id,
                 l: `${c.nombre} (${c.tipo})`,
@@ -424,7 +424,7 @@
             }), 'Seleccione colección...');
             $('#aColeccion').select2('destroy').select2({ width: '100%', dropdownParent: $('#aWStep2') });
 
-            const temps = this.temporadas.filter(t => t.empresa_id === empId);
+            const temps = this.temporadas.filter(t => t.empresa_id == empId);
             this._fillSelect('aTemporada', temps, t => ({
                 v: t.id,
                 l: t.nombre
@@ -478,7 +478,7 @@
                 return;
             }
 
-            const emp = this.empresas.find(e => e.id === empId);
+            const emp = this.empresas.find(e => e.id == empId);
             if (!emp || !emp.cantidad_cuotas) {
                 Swal.fire({
                     icon: 'warning',

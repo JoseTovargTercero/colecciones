@@ -177,7 +177,9 @@ $router->group(['prefix' => '/api'], function ($router) {
 
     // preferencias-premios
     $router->get('/preferencias-premios', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'listar']);
+    $router->get('/preferencias-premios/historial', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'historial']);
     $router->get('/preferencias-premios/pagos-tiempo', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'pagosTiempo']);
+    $router->get('/preferencias-premios/pagos-tiempo/cuotas', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'pagosTiempoCuotas']);
     $router->get('/preferencias-premios/premios-disponibles', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'premiosDisponibles']);
     $router->post('/preferencias-premios/asignar-premios', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'asignarPremios']);
     $router->post('/preferencias-premios/{id}/entregar', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'entregar']);

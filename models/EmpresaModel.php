@@ -6,12 +6,13 @@ require_once __DIR__ . '/../helpers/UuidHelper.php';
 
 class EmpresaModel
 {
-    private $db;
+    private $db, $user;
     private $table = 'empresas';
 
     public function __construct()
     {
         $this->db = Database::getInstance();
+        $this->user = $_SESSION['user_id'];
     }
 
     // ponytail: audit helper reutilizado de otros modelos
@@ -26,13 +27,18 @@ class EmpresaModel
 
     public function listar(): array
     {
-        $sql = "SELECT e.id, e.nombre, e.telefono, e.dias_retraso_permitido, e.created_at, e.usuario_id,
-                       (SELECT c.cantidad_cuetas FROM configuracion_cuotas_empresas c WHERE c.empresa_id = e.id LIMIT 1) as cantidad_cuotas,
-                       (SELECT c.cuotas FROM configuracion_cuotas_empresas c WHERE c.empresa_id = e.id LIMIT 1) as cuotas
-                FROM {$this->table} e
-                ORDER BY e.created_at DESC";
-        $res = $this->db->query($sql);
-        $rows = $res->fetch_all(MYSQLI_ASSOC);
+        $stmt = $this->db->prepare(
+            "SELECT e.id, e.nombre, e.telefono, e.dias_retraso_permitido, e.created_at, e.usuario_id,
+                    (SELECT c.cantidad_cuetas FROM configuracion_cuotas_empresas c WHERE c.empresa_id = e.id LIMIT 1) as cantidad_cuotas,
+                    (SELECT c.cuotas FROM configuracion_cuotas_empresas c WHERE c.empresa_id = e.id LIMIT 1) as cuotas
+             FROM {$this->table} e
+             WHERE e.usuario_id = ?
+             ORDER BY e.created_at DESC"
+        );
+        $stmt->bind_param('s', $this->user);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
         foreach ($rows as &$r) {
             if ($r['cuotas']) $r['cuotas'] = json_decode($r['cuotas'], true);
         }
@@ -46,9 +52,9 @@ class EmpresaModel
                     (SELECT c.cantidad_cuetas FROM configuracion_cuotas_empresas c WHERE c.empresa_id = e.id LIMIT 1) as cantidad_cuotas,
                     (SELECT c.cuotas FROM configuracion_cuotas_empresas c WHERE c.empresa_id = e.id LIMIT 1) as cuotas
              FROM {$this->table} e
-             WHERE e.id = ?"
+             WHERE e.id = ? AND e.usuario_id = ?"
         );
-        $stmt->bind_param('s', $id);
+        $stmt->bind_param('ss', $id, $this->user);
         $stmt->execute();
         $row = $stmt->get_result()->fetch_assoc();
         $stmt->close();
@@ -70,12 +76,11 @@ class EmpresaModel
         if ($cantidad <= 0) throw new InvalidArgumentException('Cantidad de cuotas obligatoria.');
 
         $now       = $this->nowWithAudit();
-        $usuarioId = $_SESSION['user_id'] ?? '';
 
         $this->db->begin_transaction();
         try {
             $stmt = $this->db->prepare("INSERT INTO {$this->table} (nombre, telefono, dias_retraso_permitido, created_at, usuario_id) VALUES (?,?,?,?,?)");
-            $stmt->bind_param('ssiss', $nombre, $telefono, $dias, $now, $usuarioId);
+            $stmt->bind_param('ssiss', $nombre, $telefono, $dias, $now, $this->user);
             $stmt->execute();
             $stmt->close();
             $id = $this->db->insert_id;
@@ -107,8 +112,8 @@ class EmpresaModel
 
         $this->db->begin_transaction();
         try {
-            $stmt = $this->db->prepare("UPDATE {$this->table} SET nombre=?, telefono=?, dias_retraso_permitido=? WHERE id=?");
-            $stmt->bind_param('ssis', $nombre, $telefono, $dias, $id);
+            $stmt = $this->db->prepare("UPDATE {$this->table} SET nombre=?, telefono=?, dias_retraso_permitido=? WHERE id=? AND usuario_id = ?");
+            $stmt->bind_param('ssiss', $nombre, $telefono, $dias, $id, $this->user);
             $stmt->execute();
             $stmt->close();
 
@@ -142,13 +147,13 @@ class EmpresaModel
     {
         $this->db->begin_transaction();
         try {
-            $stmt2 = $this->db->prepare("DELETE FROM configuracion_cuotas_empresas WHERE empresa_id=?");
-            $stmt2->bind_param('s', $id);
+            $stmt2 = $this->db->prepare("DELETE FROM configuracion_cuotas_empresas WHERE empresa_id=? AND usuario_id=?");
+            $stmt2->bind_param('ss', $id, $this->user);
             $stmt2->execute();
             $stmt2->close();
 
-            $stmt = $this->db->prepare("DELETE FROM {$this->table} WHERE id=?");
-            $stmt->bind_param('s', $id);
+            $stmt = $this->db->prepare("DELETE FROM {$this->table} WHERE id=? AND usuario_id=?");
+            $stmt->bind_param('ss', $id, $this->user);
             $stmt->execute();
             $affected = $stmt->affected_rows;
             $stmt->close();
@@ -161,4 +166,3 @@ class EmpresaModel
         }
     }
 }
-

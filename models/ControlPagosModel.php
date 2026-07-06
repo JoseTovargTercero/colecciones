@@ -211,8 +211,8 @@ class ControlPagosModel
         $empresa_nombre = $stmt->get_result()->fetch_assoc()['nombre'] ?? '';
         $stmt->close();
 
-        // 3. Obtener premios
-        $stmt = $this->db->prepare("SELECT id, nombre, foto, valor FROM premios WHERE empresa_id = ?");
+        // 3. Obtener premios (solo tipo comprado)
+        $stmt = $this->db->prepare("SELECT id, nombre, foto, valor, tipo FROM premios WHERE empresa_id = ? AND tipo = 'comprado'");
         $stmt->bind_param('s', $empresa_id);
         $stmt->execute();
         $premios = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);

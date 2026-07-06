@@ -427,7 +427,7 @@
                 <div class="brand-name">Control de Deudas</div>
                 <div class="brand-sub">Unidad de gerentes</div>
                 <div class="brand-divider"></div>
-                <p class="brand-tagline">Regístrate para gestionar tus cobros y deudas.</p>
+                <p class="brand-tagline">Regístrate para gestionar tus colecciones.</p>
             </div>
 
             <div class="panel-form">

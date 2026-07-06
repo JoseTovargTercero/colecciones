@@ -38,6 +38,9 @@
             <button class="nav-link px-3 py-3 fw-semibold" id="tab-pagos-tiempo" data-bs-toggle="tab" data-bs-target="#tabPagosTiempo" type="button" role="tab">
                 <i class="bx bx-check-circle me-1"></i>Premiar responsabilidad
             </button>
+            <button class="nav-link px-3 py-3 fw-semibold" id="tab-historial" data-bs-toggle="tab" data-bs-target="#tabHistorial" type="button" role="tab">
+                <i class="bx bx-history me-1"></i>Historial
+            </button>
         </div>
 
         <div class="tab-content" id="ppTabContent">
@@ -85,20 +88,43 @@
                     </table>
                 </div>
             </div>
+
+            <div class="tab-pane fade" id="tabHistorial" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="ppTableHistorial">
+                        <thead class="bg-light text-muted" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <tr>
+                                <th class="ps-4 border-0">Vendedor</th>
+                                <th class="border-0">Empresa / Temp</th>
+                                <th class="border-0">Premio</th>
+                                <th class="border-0">Fecha Entrega</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ppTableHistorialBody">
+                            <tr>
+                                <td colspan="4" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                    <div class="text-muted mt-2">Cargando...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Modal Asignar Premios (Pagos a Tiempo) -->
 <div class="modal fade" id="ppAsignarModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
             <div class="modal-header border-bottom-0 pb-0">
                 <div class="py-2 px-1">
                     <h5 class="modal-title fw-bold mb-1">
                         <i class="bx bx-gift me-2"></i>Asignar Premio(s)
                     </h5>
-                    <p class="text-black-50 mb-0 small">Seleccione uno o varios premios para el vendedor</p>
+                    <p class="text-black-50 mb-0 small">Seleccione un premio para cada cuota pagada a tiempo</p>
                 </div>
                 <button type="button" class="btn-close btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -107,7 +133,7 @@
                 <input type="hidden" name="temporada_id" id="ppAsignarTempId">
                 <input type="hidden" name="vendedor_id" id="ppAsignarVendedorId">
                 <div class="modal-body">
-                    <div class="bg-light rounded-3 p-3 mb-4 d-flex align-items-center border-start border-4" style="border-color: #7367f0 !important;">
+                    <div class="bg-light rounded-3 p-3 mb-3 d-flex align-items-center border-start border-4" style="border-color: #7367f0 !important;">
                         <div class="avatar-sm me-3 d-flex align-items-center justify-content-center rounded-circle" style="width: 42px; height: 42px; background: #7367f0;">
                             <i class="bx bx-user text-white fs-5"></i>
                         </div>
@@ -117,24 +143,39 @@
                         </div>
                     </div>
 
-                    <label class="form-label fw-semibold mb-2">
-                        <i class="bx bx-purchase-tag me-1 text-primary"></i>Premios disponibles
-                    </label>
-                    <select class="form-select" id="ppAsignarSelect" name="premio_ids[]" multiple="multiple" style="width: 100%;"></select>
-                    <div class="text-muted small mt-2">
-                        <i class="bx bx-info-circle me-1"></i>Escriba para buscar, seleccione múltiples premios.
+                    <div id="ppAsignarCuotasLoading" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <div class="text-muted mt-2">Cargando cuotas...</div>
                     </div>
-
-                    <div id="ppAsignarResumen" class="mt-3 d-none">
-                        <hr class="my-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="text-muted small">Premios seleccionados:</span>
-                            <span class="badge bg-primary rounded-pill" id="ppAsignarCount">0</span>
+                    <div id="ppAsignarCuotasWrap" style="display:none">
+                        <label class="form-label fw-semibold mb-2">
+                            <i class="bx bx-check-circle me-1 text-success"></i>Cuotas pagadas a tiempo
+                        </label>
+                        <div class="table-responsive" style="max-height:320px;overflow-y:auto">
+                            <table class="table table-sm table-hover align-middle mb-0" id="ppAsignarCuotasTable">
+                                <thead class="table-light small text-muted text-uppercase" style="position:sticky;top:0;z-index:1">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Colección</th>
+                                        <th>Fecha pago</th>
+                                        <th class="text-end">Monto</th>
+                                        <th class="text-center">Premio</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ppAsignarCuotasBody"></tbody>
+                            </table>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center mt-1">
-                            <span class="fw-semibold">Valor total:</span>
-                            <span class="fw-bold fs-5 text-primary" id="ppAsignarTotal">$0.00</span>
+                        <div id="ppAsignarResumen" class="mt-3 d-none">
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted small">Cuotas con premio asignado:</span>
+                                <span class="badge bg-primary rounded-pill" id="ppAsignarCount">0</span>
+                            </div>
                         </div>
+                    </div>
+                    <div id="ppAsignarNoCuotas" class="text-center py-4 text-muted" style="display:none">
+                        <i class="bx bx-info-circle fs-3 mb-2 d-block"></i>
+                        Este vendedor no tiene cuotas pagadas a tiempo sin premiar.
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-0">
@@ -204,6 +245,12 @@
 
         document.getElementById('ppSearchInput').addEventListener('input', function(e) {
             renderTabla(e.target.value);
+        });
+
+        cargarHistorial();
+        document.getElementById('tab-historial').addEventListener('shown.bs.tab', () => {
+            const tbody = document.getElementById('ppTableHistorialBody');
+            if (tbody.querySelector('.spinner-border')) cargarHistorial();
         });
     });
 
@@ -339,22 +386,57 @@
         `).join('');
     }
 
-    let _ppPremiosDisponibles = [];
-    const PP_SEL2_CFG = {
-        placeholder: 'Busque y seleccione premios...',
-        allowClear: true,
-        width: '100%',
-        language: {
-            noResults: () => 'No se encontraron premios',
-            searching: () => 'Buscando...'
-        },
-        escapeMarkup: m => m,
-        templateResult: d => {
-            if (!d.id) return d.text;
-            const p = _ppPremiosDisponibles.find(x => x.id == d.id);
-            return p ? $(`<span><span class="fw-medium">${p.nombre}</span> <small class="text-muted">— $${parseFloat(p.valor).toFixed(2)}</small></span>`) : d.text;
+    async function cargarHistorial() {
+        const tbody = document.getElementById('ppTableHistorialBody');
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><div class="text-muted mt-2">Cargando...</div></td></tr>`;
+        try {
+            const res = await fetch(BASE + 'api/preferencias-premios/historial');
+            const json = await res.json();
+            if (json.value) {
+                renderHistorial(json.data || []);
+            } else {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4">${json.message}</td></tr>`;
+            }
+        } catch (_) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4">Error de conexión.</td></tr>`;
         }
-    };
+    }
+
+    function renderHistorial(data) {
+        const tbody = document.getElementById('ppTableHistorialBody');
+        if (!data.length) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4"><i class="bx bx-info-circle fs-4 mb-2 d-block"></i>No hay premios entregados aún.</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = data.map(r => {
+            const fecha = r.fecha_entrega ? r.fecha_entrega : (r.fecha_solicitud ? r.fecha_solicitud.slice(0, 10) : '—');
+            const valor = parseFloat(r.premio_valor || 0).toFixed(2);
+            return `<tr>
+                <td class="ps-4">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-soft-success rounded-circle text-success d-flex justify-content-center align-items-center me-3" style="width:40px;height:40px">
+                            <i class="bx bx-user fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-semibold">${r.vendedor_nombres || 'Desconocido'}</h6>
+                            <small class="text-muted">CI: ${r.vendedor_cedula || '—'}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="fw-medium">${r.empresa_nombre || '—'}</div>
+                    <small class="text-muted">${r.temporada_nombre || '—'}</small>
+                </td>
+                <td>
+                    <div class="fw-medium" style="color:#a594f9"><i class="bx bx-gift me-1"></i>${r.premio_nombre || '—'}</div>
+                    <small class="text-muted">$${valor}</small>
+                </td>
+                <td class="text-muted">${fecha}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    let _ppPremiosDisponibles = [];
 
     function abrirAsignarPremios(vendedorId, vendedorNombre) {
         const empresaId = document.getElementById('ppEmpresa').value;
@@ -368,63 +450,88 @@
         document.getElementById('ppAsignarTempId').value = tempId;
         document.getElementById('ppAsignarVendedorId').value = vendedorId;
         document.getElementById('ppAsignarVendedorNombre').textContent = vendedorNombre;
+        document.getElementById('ppAsignarCuotasLoading').style.display = '';
+        document.getElementById('ppAsignarCuotasWrap').style.display = 'none';
+        document.getElementById('ppAsignarNoCuotas').style.display = 'none';
         document.getElementById('ppAsignarResumen').classList.add('d-none');
 
-        const $sel = $('#ppAsignarSelect');
-        if ($sel.data('select2')) $sel.select2('destroy');
-        $sel.empty();
+        const modal = new bootstrap.Modal(document.getElementById('ppAsignarModal'));
+        modal.show();
 
-        fetch(`${BASE}api/preferencias-premios/premios-disponibles?empresa_id=${empresaId}`)
-            .then(r => r.json())
-            .then(json => {
-                _ppPremiosDisponibles = json.data || [];
-                _ppPremiosDisponibles.forEach(p => {
-                    $sel.append(new Option(`${p.nombre} — $${parseFloat(p.valor).toFixed(2)}`, p.id, false, false));
-                });
-                $sel.select2({
-                    ...PP_SEL2_CFG,
-                    dropdownParent: $('#ppAsignarModal')
-                });
+        Promise.all([
+            fetch(`${BASE}api/preferencias-premios/premios-disponibles?empresa_id=${empresaId}`).then(r => r.json()),
+            fetch(`${BASE}api/preferencias-premios/pagos-tiempo/cuotas?vendedor_id=${vendedorId}&empresa_id=${empresaId}&temporada_id=${tempId}`).then(r => r.json())
+        ]).then(([premiosRes, cuotasRes]) => {
+            _ppPremiosDisponibles = premiosRes.data || [];
+            const cuotas = cuotasRes.data || [];
 
-                new bootstrap.Modal(document.getElementById('ppAsignarModal')).show();
-                setTimeout(() => {
-                    $sel.select2('open');
-                    $sel.data('select2').$container.find('.select2-search__field').focus();
-                }, 450);
-            })
-            .catch(() => Swal.fire('Error', 'Error al cargar premios.', 'error'));
+            document.getElementById('ppAsignarCuotasLoading').style.display = 'none';
+
+            if (!cuotas.length) {
+                document.getElementById('ppAsignarNoCuotas').style.display = '';
+                return;
+            }
+
+            document.getElementById('ppAsignarCuotasWrap').style.display = '';
+
+            const tbody = document.getElementById('ppAsignarCuotasBody');
+            tbody.innerHTML = cuotas.map(c => `
+                <tr>
+                    <td class="fw-medium">${c.numero_cuota}</td>
+                    <td>${c.coleccion || '—'}</td>
+                    <td class="text-nowrap">${c.fecha_pago || '—'}</td>
+                    <td class="text-end fw-semibold">$${parseFloat(c.monto_a_pagar || 0).toFixed(2)}</td>
+                    <td class="text-center">
+                        <select class="form-select form-select-sm pp-premio-select" data-cuota-id="${c.id}" style="min-width:130px">
+                            <option value="">—</option>
+                            ${_ppPremiosDisponibles.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('')}
+                        </select>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.querySelectorAll('.pp-premio-select').forEach(el => {
+                el.addEventListener('change', _ppActualizarResumen);
+            });
+            _ppActualizarResumen();
+        }).catch(() => {
+            document.getElementById('ppAsignarCuotasLoading').style.display = 'none';
+            document.getElementById('ppAsignarNoCuotas').style.display = '';
+            Swal.fire('Error', 'Error al cargar datos.', 'error');
+        });
     }
 
     function _ppActualizarResumen() {
-        const vals = $('#ppAsignarSelect').val() || [];
+        const selects = document.querySelectorAll('.pp-premio-select');
+        let count = 0;
+        selects.forEach(el => { if (el.value) count++; });
         const el = document.getElementById('ppAsignarResumen');
-        if (!vals.length) {
+        if (!count) {
             el.classList.add('d-none');
             return;
         }
         el.classList.remove('d-none');
-        document.getElementById('ppAsignarCount').textContent = vals.length;
-        const total = vals.reduce((s, id) => {
-            const p = _ppPremiosDisponibles.find(x => x.id == id);
-            return s + (p ? parseFloat(p.valor) : 0);
-        }, 0);
-        document.getElementById('ppAsignarTotal').textContent = `$${total.toFixed(2)}`;
+        document.getElementById('ppAsignarCount').textContent = count;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        $('#ppAsignarSelect').on('change', _ppActualizarResumen);
         document.getElementById('ppAsignarModal').addEventListener('hidden.bs.modal', () => {
-            const $sel = $('#ppAsignarSelect');
-            if ($sel.data('select2')) $sel.select2('destroy');
-            $sel.empty();
+            document.getElementById('ppAsignarCuotasBody').innerHTML = '';
         });
     });
 
     document.getElementById('ppAsignarForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        const vals = $('#ppAsignarSelect').val() || [];
-        if (!vals.length) {
-            Swal.fire('Seleccione al menos un premio', '', 'warning');
+
+        const asignaciones = [];
+        document.querySelectorAll('.pp-premio-select').forEach(el => {
+            if (el.value) {
+                asignaciones.push({ cuota_id: parseInt(el.dataset.cuotaId), premio_id: parseInt(el.value) });
+            }
+        });
+
+        if (!asignaciones.length) {
+            Swal.fire('Seleccione al menos un premio para alguna cuota', '', 'warning');
             return;
         }
 
@@ -433,15 +540,15 @@
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Asignando...';
 
         try {
-            const fd = new FormData();
-            fd.append('empresa_id', document.getElementById('ppAsignarEmpresaId').value);
-            fd.append('temporada_id', document.getElementById('ppAsignarTempId').value);
-            fd.append('vendedor_id', document.getElementById('ppAsignarVendedorId').value);
-            vals.forEach(id => fd.append('premio_ids[]', id));
-
             const r = await fetch(BASE + 'api/preferencias-premios/asignar-premios', {
                 method: 'POST',
-                body: fd
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    empresa_id: parseInt(document.getElementById('ppAsignarEmpresaId').value),
+                    temporada_id: document.getElementById('ppAsignarTempId').value,
+                    vendedor_id: parseInt(document.getElementById('ppAsignarVendedorId').value),
+                    asignaciones: asignaciones
+                })
             });
             const j = await r.json();
             if (j.value) {
@@ -491,6 +598,7 @@
                             showConfirmButton: false
                         });
                         cargarTabla();
+                        cargarHistorial();
                     } else {
                         Swal.fire('Error', json.message, 'error');
                     }

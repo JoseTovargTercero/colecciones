@@ -4,10 +4,11 @@ require_once __DIR__ . '/../helpers/UuidHelper.php';
 
 class AsignacionModel
 {
-    private $db;
+    private $db, $user;
     public function __construct()
     {
         $this->db = Database::getInstance();
+        $this->user = $_SESSION['user_id'] ?? '';
     }
 
     public function listar(?string $empresa_id = null): array
@@ -22,13 +23,22 @@ class AsignacionModel
              LEFT JOIN vendedores v ON ac.vendedor_id = v.id
              LEFT JOIN colecciones_combos cc ON ac.coleccion_combo_id = cc.id
              LEFT JOIN temporadas t ON ac.temporada_id = t.id
-             LEFT JOIN empresas e ON cc.empresa_id = e.id";
+             LEFT JOIN empresas e ON cc.empresa_id = e.id
+             WHERE ac.usuario_id = ?";
+        $params = [$this->user];
+        $types = 's';
         if ($empresa_id) {
-            $sql .= " WHERE cc.empresa_id = '" . $this->db->real_escape_string($empresa_id) . "'";
+            $sql .= " AND cc.empresa_id = ?";
+            $params[] = $empresa_id;
+            $types .= 's';
         }
         $sql .= " ORDER BY ac.created_at DESC";
-        $r = $this->db->query($sql);
-        return $r ? $r->fetch_all(MYSQLI_ASSOC) : [];
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        return $rows;
     }
 
     public function crear(array $d): string
@@ -37,23 +47,24 @@ class AsignacionModel
         $coleccion_id  = $d['coleccion_id'] ?? '';
         $temporada_id  = $d['temporada_id'] ?? '';
 
+        $stmt = $this->db->prepare("SELECT id FROM vendedores WHERE id=? AND usuario_id=?");
+        $stmt->bind_param('is', $vendedor_id, $this->user);
+        $stmt->execute();
+        if (!$stmt->get_result()->fetch_assoc()) throw new Exception('Vendedor no encontrado');
+        $stmt->close();
 
-
-        // OBTENER LA INFO DE LA COLECCION
-        // OBTENER LA INFO DE LA COLECCION
         $stmt = $this->db->prepare(
-            "SELECT precio_venta_vendedor, ganancia_vendedor, precio_base
-                FROM colecciones_combos
-                WHERE id = ?");
-        $stmt->bind_param('s', $coleccion_id);
+            "SELECT cc.precio_venta_vendedor, cc.ganancia_vendedor, cc.precio_base
+             FROM colecciones_combos cc
+             INNER JOIN empresas e ON cc.empresa_id = e.id
+             WHERE cc.id = ? AND e.usuario_id = ?");
+        $stmt->bind_param('ss', $coleccion_id, $this->user);
         $stmt->execute();
         $r = $stmt->get_result();
 
-        // Usamos fetch_assoc para obtener una sola fila como arreglo asociativo
         $row = $r->fetch_assoc();
         $stmt->close();
 
-        // Verificamos que se haya encontrado el registro antes de acceder a las variables
         if ($row) {
             $precio_venta_vendedor = $row['precio_venta_vendedor'];
             $ganancia_vendedor = $row['ganancia_vendedor'];
@@ -61,14 +72,10 @@ class AsignacionModel
         } else {
             throw new Exception('No existe la coleccion');
         }
-        // OBTENER LA INFO DE LA COLECCION
-
-
 
         $fecha_asig    = trim($d['fecha_asignacion'] ?? '');
         $cuotas        = $d['cuotas'] ?? [];
         $cantidad      = isset($d['cantidad']) ? max(1, (int)$d['cantidad']) : 1;
-        $u             = $_SESSION['user_id'] ?? '';
 
         if (!$vendedor_id || !$coleccion_id || !$temporada_id || !$fecha_asig)
             throw new Exception('Faltan datos obligatorios o son inválidos');
@@ -81,7 +88,7 @@ class AsignacionModel
                  (vendedor_id, coleccion_combo_id, temporada_id, estado, aplica_premio_especial, fecha_asignacion, usuario_id, costo, ganancia_vendedor, ganancia_gerente)
                  VALUES (?, ?, ?, 'activa', 0, ?, ?, ?, ?, ?)"
             );
-            $stmt->bind_param('issssddd', $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $u, $precio_venta_vendedor, $ganancia_vendedor, $ganancia_gerente);
+            $stmt->bind_param('issssddd', $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $this->user, $precio_venta_vendedor, $ganancia_vendedor, $ganancia_gerente);
 
             $stmt2 = $this->db->prepare(
                 "INSERT INTO cuotas_coleccion
@@ -103,7 +110,7 @@ class AsignacionModel
                     $monto         = (float)$c['monto'];
                     $fecha_pago    = $c['fecha_pago'];
 
-                    $stmt2->bind_param('iidddss', $asignacion_id, $num, $porcentaje, $monto, $monto, $fecha_pago, $u);
+                    $stmt2->bind_param('iidddss', $asignacion_id, $num, $porcentaje, $monto, $monto, $fecha_pago, $this->user);
                     $stmt2->execute();
                 }
             }
@@ -120,12 +127,13 @@ class AsignacionModel
     public function listarCuotas(string $asignacion_id): array
     {
         $stmt = $this->db->prepare(
-            "SELECT id, numero_cuota, porcentaje, monto_a_pagar, fecha_pago, estatus_pago, comprobante
-             FROM cuotas_coleccion
-             WHERE asignacion_id = ?
-             ORDER BY numero_cuota ASC"
+            "SELECT c.id, c.numero_cuota, c.porcentaje, c.monto_a_pagar, c.fecha_pago, c.estatus_pago, c.comprobante
+             FROM cuotas_coleccion c
+             INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
+             WHERE c.asignacion_id = ? AND ac.usuario_id = ?
+             ORDER BY c.numero_cuota ASC"
         );
-        $stmt->bind_param('s', $asignacion_id);
+        $stmt->bind_param('ss', $asignacion_id, $this->user);
         $stmt->execute();
         $r = $stmt->get_result();
         $rows = $r->fetch_all(MYSQLI_ASSOC);
@@ -160,13 +168,17 @@ class AsignacionModel
     {
         $this->db->begin_transaction();
         try {
-            $s1 = $this->db->prepare("DELETE FROM cuotas_coleccion WHERE asignacion_id=?");
-            $s1->bind_param('s', $id);
+            $s1 = $this->db->prepare(
+                "DELETE c FROM cuotas_coleccion c
+                 INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
+                 WHERE ac.id = ? AND ac.usuario_id = ?"
+            );
+            $s1->bind_param('ss', $id, $this->user);
             $s1->execute();
             $s1->close();
 
-            $s2 = $this->db->prepare("DELETE FROM asignaciones_colecciones WHERE id=?");
-            $s2->bind_param('s', $id);
+            $s2 = $this->db->prepare("DELETE FROM asignaciones_colecciones WHERE id=? AND usuario_id=?");
+            $s2->bind_param('ss', $id, $this->user);
             $s2->execute();
             $aff = $s2->affected_rows;
             $s2->close();

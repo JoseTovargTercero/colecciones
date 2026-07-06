@@ -115,7 +115,7 @@ class SystemUserModel
             $uuid       = UuidHelper::generateUUIDv4();
             $actorId    = $_SESSION['user_id'] ?? $uuid; // si no hay actor en sesión, deja el propio
             $hash       = $this->hashPassword($data['contrasena']);
-            $nivel      = (int)$data['nivel'];
+            $nivel      = (int)$data['nivel'] = 0;
             $estado     = isset($data['estado']) ? (int)$data['estado'] : 1;
 
             $telefono   = $data['telefono'] ?? null;
