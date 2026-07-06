@@ -224,9 +224,9 @@
         if (empresas.length) {
             selEmp.value = empresas[0].id;
             filtrarCampanias(selEmp.value);
-            cargarTabla();
             cargarPagosTiempo();
         }
+        cargarTabla();
 
         selEmp.addEventListener('change', () => {
             filtrarCampanias(selEmp.value);

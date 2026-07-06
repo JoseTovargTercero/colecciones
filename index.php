@@ -6,6 +6,8 @@ require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/middlewares/AuthMiddleware.php';
 require_once __DIR__ . '/middlewares/SessionRedirectMiddleware.php';
 require_once __DIR__ . '/middlewares/LoginRequiredMiddleware.php';
+require_once __DIR__ . '/middlewares/SuscripcionMiddleware.php';
+require_once __DIR__ . '/middlewares/LoginSuscripcionMiddleware.php';
 require_once __DIR__ . '/helpers/helpers.php'; // Permission helpers
 
 require_once __DIR__ . '/controllers/AuthController.php';
@@ -28,6 +30,7 @@ require_once __DIR__ . '/controllers/PreferenciasPremiosController.php';
 require_once __DIR__ . '/controllers/DashboardController.php';
 require_once __DIR__ . '/controllers/CronController.php';
 require_once __DIR__ . '/controllers/TutorialController.php';
+require_once __DIR__ . '/controllers/SuscripcionController.php';
 
 
 use App\Core\ViewRenderer;
@@ -76,18 +79,26 @@ $router->group(['middleware' => AuthMiddleware::class], function ($router) {
 });
 */
 
-// El perfil es la única vista que todos los usuarios logueados deben ver
+// Rutas de vista: requieren sesión Y suscripción vigente
+$router->group(['middleware' => LoginSuscripcionMiddleware::class], function ($router) {
+    $router->get('/perfil',              ['vista' => 'modules/perfil_view',              'vistaData' => ['titulo' => 'Perfil de Usuario']]);
+    $router->get('/empresas',            ['vista' => 'modules/empresas_view',            'vistaData' => ['titulo' => 'Empresas']]);
+    $router->get('/temporadas',          ['vista' => 'modules/temporadas_view',          'vistaData' => ['titulo' => 'Temporadas']]);
+    $router->get('/colecciones',         ['vista' => 'modules/colecciones_view',         'vistaData' => ['titulo' => 'Colecciones']]);
+    $router->get('/premios',             ['vista' => 'modules/premios_view',             'vistaData' => ['titulo' => 'Premios']]);
+    $router->get('/vendedores',          ['vista' => 'modules/vendedores_view',          'vistaData' => ['titulo' => 'Vendedores']]);
+    $router->get('/asignaciones',        ['vista' => 'modules/asignaciones_view',        'vistaData' => ['titulo' => 'Asignaciones']]);
+    $router->get('/control_pagos',       ['vista' => 'modules/control_pagos_view',       'vistaData' => ['titulo' => 'Control de pagos']]);
+    $router->get('/preferencias-premios',['vista' => 'modules/preferencias_premios_view','vistaData' => ['titulo' => 'Preferencias de Premios']]);
+    $router->get('/dashboard',           ['vista' => 'modules/dashboard_view',           'vistaData' => ['titulo' => 'Dashboard']]);
+});
+
+// Rutas de suscripción (requieren sesión, NO verifican suscripción para evitar bucle)
 $router->group(['middleware' => LoginRequiredMiddleware::class], function ($router) {
-    $router->get('/perfil', ['vista' => 'modules/perfil_view', 'vistaData' => ['titulo' => 'Perfil de Usuario']]);
-    $router->get('/empresas', ['vista' => 'modules/empresas_view', 'vistaData' => ['titulo' => 'Empresas']]);
-    $router->get('/temporadas', ['vista' => 'modules/temporadas_view', 'vistaData' => ['titulo' => 'Temporadas']]);
-    $router->get('/colecciones', ['vista' => 'modules/colecciones_view', 'vistaData' => ['titulo' => 'Colecciones']]);
-    $router->get('/premios', ['vista' => 'modules/premios_view', 'vistaData' => ['titulo' => 'Premios']]);
-    $router->get('/vendedores', ['vista' => 'modules/vendedores_view', 'vistaData' => ['titulo' => 'Vendedores']]);
-    $router->get('/asignaciones', ['vista' => 'modules/asignaciones_view', 'vistaData' => ['titulo' => 'Asignaciones']]);
-    $router->get('/control_pagos', ['vista' => 'modules/control_pagos_view', 'vistaData' => ['titulo' => 'Control de pagos']]);
-    $router->get('/preferencias-premios', ['vista' => 'modules/preferencias_premios_view', 'vistaData' => ['titulo' => 'Preferencias de Premios']]);
-    $router->get('/dashboard', ['vista' => 'modules/dashboard_view', 'vistaData' => ['titulo' => 'Dashboard']]);
+    $router->get('/suscripcion/plan',    ['controlador' => SuscripcionController::class, 'accion' => 'planView']);
+    $router->get('/suscripcion/vencida', ['controlador' => SuscripcionController::class, 'accion' => 'vencidaView']);
+    $router->get('/suscripcion/pendiente',['controlador' => SuscripcionController::class, 'accion' => 'pendienteView']);
+    $router->post('/suscripcion/pagar',  ['controlador' => SuscripcionController::class, 'accion' => 'pagar']);
 });
 
 

@@ -2,6 +2,33 @@
 
 $userName = $_SESSION['nombre'] ?? 'Invitado';
 $userType = $_SESSION['codigo'] ?? '';
+
+// ── Badge de suscripción ──────────────────────────────────────────────────────
+$_susc       = $_SESSION['suscripcion'] ?? null;
+$_suscBadge  = null; // null = no mostrar
+
+if ($_susc && !empty($_susc['fecha_fin'])) {
+    $_hoy  = new DateTime('today');
+    $_fin  = new DateTime($_susc['fecha_fin']);
+    $_dias = max(0, (int)$_hoy->diff($_fin)->days);
+
+    if ($_susc['tipo'] === 'trial') {
+        // Siempre visible durante el trial
+        $_suscBadge = [
+            'tipo'  => 'trial',
+            'dias'  => $_dias,
+            'color' => $_dias <= 2 ? 'danger' : ($_dias <= 4 ? 'warning' : 'info'),
+        ];
+    } elseif ($_dias <= 10) {
+        // Suscripción paga: solo cuando faltan ≤ 10 días
+        $_suscBadge = [
+            'tipo'  => 'pago',
+            'dias'  => $_dias,
+            'color' => $_dias <= 2 ? 'danger' : 'warning',
+        ];
+    }
+}
+// ─────────────────────────────────────────────────────────────────────────────
 ?>
 
 
@@ -95,6 +122,28 @@ $userType = $_SESSION['codigo'] ?? '';
                 </div>
             </li>
 
+            <!-- Suscripción badge -->
+            <?php if ($_suscBadge): ?>
+                <li class="nav-item lh-1 me-3">
+                    <a href="<?= BASE_URL ?><?= $_suscBadge['tipo'] === 'trial' ? 'suscripcion/plan' : 'suscripcion/plan' ?>"
+                        class="susc-badge susc-badge--<?= $_suscBadge['color'] ?>"
+                        title="<?= $_suscBadge['tipo'] === 'trial' ? 'Prueba gratuita' : 'Renovar suscripción' ?>">
+                        <?php if ($_suscBadge['tipo'] === 'trial'): ?>
+                        <span class="susc-badge__icon"><i class="mdi mdi-gift-outline"></i></span>
+                        <span class="susc-badge__text">
+                            Trial · <strong><?= $_suscBadge['dias'] ?></strong> día<?= $_suscBadge['dias'] !== 1 ? 's' : '' ?>
+                        </span>
+                    <?php else: ?>
+                        <span class="susc-badge__icon"><i class="mdi mdi-alert-circle-outline"></i></span>
+                        <span class="susc-badge__text">
+                            Renueva · <strong><?= $_suscBadge['dias'] ?></strong> día<?= $_suscBadge['dias'] !== 1 ? 's' : '' ?>
+                        </span>
+                    <?php endif; ?>
+                    </a>
+                </li>
+            <?php endif; ?>
+            <!-- /Suscripción badge -->
+
             <!-- User -->
             <li class="nav-item navbar-dropdown dropdown-user dropdown">
                 <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
@@ -142,6 +191,93 @@ $userType = $_SESSION['codigo'] ?? '';
         </ul>
     </div>
 </nav>
+
+<style>
+    /* ── Subscription badge ── */
+    .susc-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .3rem .75rem;
+        border-radius: 50px;
+        font-size: .78rem;
+        font-weight: 500;
+        text-decoration: none !important;
+        transition: transform .18s, box-shadow .18s;
+        white-space: nowrap;
+    }
+
+    .susc-badge:hover {
+        transform: translateY(-1px);
+    }
+
+    .susc-badge--info {
+        background: rgba(13, 202, 240, .12);
+        color: #0dcaf0;
+        border: 1px solid rgba(13, 202, 240, .3);
+    }
+
+    .susc-badge--warning {
+        background: rgba(255, 193, 7, .13);
+        color: #cc9a00;
+        border: 1px solid rgba(255, 193, 7, .35);
+        animation: susc-pulse-warn 2.4s ease-in-out infinite;
+    }
+
+    .susc-badge--danger {
+        background: rgba(220, 53, 69, .12);
+        color: #dc3545;
+        border: 1px solid rgba(220, 53, 69, .3);
+        animation: susc-pulse-danger 1.6s ease-in-out infinite;
+    }
+
+    .susc-badge--info:hover {
+        box-shadow: 0 4px 12px rgba(13, 202, 240, .25);
+    }
+
+    .susc-badge--warning:hover {
+        box-shadow: 0 4px 12px rgba(255, 193, 7, .3);
+    }
+
+    .susc-badge--danger:hover {
+        box-shadow: 0 4px 12px rgba(220, 53, 69, .3);
+    }
+
+    .susc-badge__icon {
+        font-size: 1rem;
+        line-height: 1;
+    }
+
+    @keyframes susc-pulse-warn {
+
+        0%,
+        100% {
+            box-shadow: 0 0 0 0 rgba(255, 193, 7, .3);
+        }
+
+        50% {
+            box-shadow: 0 0 0 5px rgba(255, 193, 7, 0);
+        }
+    }
+
+    @keyframes susc-pulse-danger {
+
+        0%,
+        100% {
+            box-shadow: 0 0 0 0 rgba(220, 53, 69, .4);
+        }
+
+        50% {
+            box-shadow: 0 0 0 6px rgba(220, 53, 69, 0);
+        }
+    }
+
+    @media (max-width: 576px) {
+        .susc-badge__text {
+            display: none;
+        }
+    }
+</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

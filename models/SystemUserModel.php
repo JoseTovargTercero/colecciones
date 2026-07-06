@@ -3,6 +3,7 @@ require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../config/ClientEnvironmentInfo.php';
 require_once __DIR__ . '/../config/TimezoneManager.php';
 require_once __DIR__ . '/../helpers/UuidHelper.php';
+require_once __DIR__ . '/SuscripcionModel.php';
 
 class SystemUserModel
 {
@@ -150,6 +151,10 @@ class SystemUserModel
             }
 
             $stmt->close();
+
+            // ponytail: trial dentro de la misma TX para no dejar usuarios sin plan
+            (new SuscripcionModel())->crearTrial($uuid);
+
             $this->db->commit();
             return $uuid;
         } catch (\Throwable $e) {
