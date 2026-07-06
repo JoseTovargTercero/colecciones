@@ -41,7 +41,7 @@ class SystemUserModel
     {
         $where = $incluirEliminados ? '1=1' : 'deleted_at IS NULL';
         // MODIFICADO: Añadido dispositivo_token
-        $sql = "SELECT user_id, nombre, email, nivel, estado, dispositivo_token, created_at, created_by, updated_at, updated_by
+        $sql = "SELECT user_id, nombre, email, telefono, nivel, estado, dispositivo_token, created_at, created_by, updated_at, updated_by
                 FROM {$this->table}
                 WHERE {$where}
                 ORDER BY created_at DESC, nombre ASC
@@ -61,7 +61,7 @@ class SystemUserModel
     public function obtenerPorId(string $userId): ?array
     {
         // MODIFICADO: Añadido dispositivo_token
-        $sql = "SELECT user_id, nombre, email, nivel, estado, dispositivo_token,
+        $sql = "SELECT user_id, nombre, email, telefono, nivel, estado, dispositivo_token,
                        created_at, created_by, updated_at, updated_by, deleted_at, deleted_by
                 FROM {$this->table}
                 WHERE user_id = ?";
@@ -79,7 +79,7 @@ class SystemUserModel
     public function obtenerPorEmail(string $email): ?array
     {
         // MODIFICADO: Añadido dispositivo_token
-        $sql = "SELECT user_id, nombre, email, contrasena, nivel, estado, dispositivo_token, deleted_at
+        $sql = "SELECT user_id, nombre, email, telefono, contrasena, nivel, estado, dispositivo_token, deleted_at
                 FROM {$this->table}
                 WHERE email = ?
                 LIMIT 1";
@@ -118,20 +118,20 @@ class SystemUserModel
             $nivel      = (int)$data['nivel'];
             $estado     = isset($data['estado']) ? (int)$data['estado'] : 1;
 
-            // MODIFICADO: Añadido 'dispositivo_token' al INSERT y 'NULL' a VALUES
+            $telefono   = $data['telefono'] ?? null;
             $sql = "INSERT INTO {$this->table}
-                     (user_id, nombre, email, contrasena, nivel, estado, dispositivo_token,
+                     (user_id, nombre, email, telefono, contrasena, nivel, estado, dispositivo_token,
                       created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
-                     VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, NULL, NULL, NULL, NULL)";
+                     VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, NULL, NULL, NULL, NULL)";
             $stmt = $this->db->prepare($sql);
             if (!$stmt) throw new mysqli_sql_exception("Error al preparar inserción: " . $this->db->error);
 
-            // El bind_param sigue siendo 'ssssisss' porque el NULL se hardcodeó en la query
             $stmt->bind_param(
-                'ssssisss',
+                'sssssisss',
                 $uuid,
                 $data['nombre'],
                 $data['email'],
+                $telefono,
                 $hash,
                 $nivel,
                 $estado,
@@ -173,6 +173,11 @@ class SystemUserModel
         if (isset($data['email'])) {
             $campos[] = 'email = ?';
             $params[] = $data['email'];
+            $types .= 's';
+        }
+        if (isset($data['telefono'])) {
+            $campos[] = 'telefono = ?';
+            $params[] = $data['telefono'];
             $types .= 's';
         }
         if (isset($data['nivel'])) {
@@ -342,8 +347,7 @@ class SystemUserModel
      */
     public function loginPassLeft(string $email): array
     {
-        // MODIFICADO: Añadido dispositivo_token
-        $sql = "SELECT user_id, nombre, email, contrasena, nivel, estado, dispositivo_token
+        $sql = "SELECT user_id, nombre, email, telefono, contrasena, nivel, estado, dispositivo_token
             FROM system_users
             WHERE email = ? AND deleted_at IS NULL
             LIMIT 1";
@@ -366,11 +370,11 @@ class SystemUserModel
         $row = $res->fetch_assoc();
         $stmt->close();
 
-        // MODIFICADO: Añadido dispositivo_token al array de usuario
         $userLite = [
             'user_id' => $row['user_id'],
             'nombre'  => $row['nombre'],
             'email'   => $row['email'],
+            'telefono' => $row['telefono'] ?? null,
             'nivel'   => (int)$row['nivel'],
             'estado'  => (int)($row['estado'] ?? 1),
             'dispositivo_token' => $row['dispositivo_token'] ?? null,
@@ -456,7 +460,7 @@ class SystemUserModel
     {
 
         // 1. Consultar el usuario por email
-        $sql = "SELECT user_id, nombre, email, contrasena, nivel, estado, dispositivo_token
+        $sql = "SELECT user_id, nombre, email, telefono, contrasena, nivel, estado, dispositivo_token
                 FROM {$this->table}
                 WHERE email = ? AND deleted_at IS NULL
                 LIMIT 1";
@@ -564,7 +568,7 @@ class SystemUserModel
         $data = null;
 
         // Consulta la tabla session_management para obtener el user_id asociado al token
-        $sql = "SELECT u.user_id, u.nombre, u.email, u.nivel, u.estado, sm.session_id 
+        $sql = "SELECT u.user_id, u.nombre, u.email, u.telefono, u.nivel, u.estado, sm.session_id 
                 FROM session_management sm
                 JOIN system_users u ON u.user_id = sm.user_id
                 WHERE sm.session_id = ? AND sm.token_used = 0 AND u.estado = 1 AND sm.user_id IS NOT NULL";

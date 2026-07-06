@@ -49,10 +49,9 @@
                     <div class="mb-2">
                         <label for="vNivel" class="form-label">Nivel</label>
                         <select class="form-control" id="vNivel" required>
-                            <option value="1">1 - Inicial</option>
-                            <option value="2">2 - Básico</option>
-                            <option value="3">3 - Intermedio</option>
-                            <option value="4">4 - Avanzado</option>
+                            <option value="VENDEDOR">VENDEDOR</option>
+                            <option value="DISTRIBUIDOR">DISTRIBUIDOR</option>
+                            <option value="GTE DISTRITO">GTE DISTRITO</option>
                         </select>
                     </div>
                 </div>
@@ -159,7 +158,9 @@
             };
             const resp = await fetch(this.api + (i ? '/' + i : ''), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(b)
             });
             let msg;
@@ -174,7 +175,11 @@
             } catch (_) {
                 msg = await resp.text() || 'Error desconocido';
             }
-            Swal.fire({ icon: 'error', title: 'Error', text: msg });
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: msg
+            });
         },
         async del(i) {
             if (!confirm('¿Borrar?')) return;
@@ -221,7 +226,11 @@
                 if (d.cuotas && d.cuotas.length) {
                     cuoEl.innerHTML = '<table class="table table-sm table-hover mb-0"><thead class="table-light"><tr><th>#</th><th>Colección</th><th>Empresa</th><th>Vence</th><th class="text-end">Monto</th><th class="text-center">Status</th></tr></thead><tbody>' +
                         d.cuotas.map(c => {
-                            const badgeCls = {pendiente:'bg-secondary',vencido:'bg-danger','dentro_de_margen':'bg-warning text-dark'};
+                            const badgeCls = {
+                                pendiente: 'bg-secondary',
+                                vencido: 'bg-danger',
+                                'dentro_de_margen': 'bg-warning text-dark'
+                            };
                             return `<tr>
                                 <td class="fw-medium">${c.numero_cuota || '—'}</td>
                                 <td>${c.coleccion || ''}</td>

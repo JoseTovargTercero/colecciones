@@ -65,6 +65,7 @@ $router = new Router($viewRenderer);
 // Rutas públicas (sin autenticación)
 $router->group(['middleware' => SessionRedirectMiddleware::class], function ($router) {
     $router->get('/login', ['vista' => 'auth/login', 'vistaData' => ['titulo' => 'Iniciar Sesión', 'layout' => false]]);
+    $router->get('/registro', ['vista' => 'auth/register', 'vistaData' => ['titulo' => 'Crear cuenta', 'layout' => false]]);
     $router->get('/', ['vista' => 'auth/login', 'vistaData' => ['titulo' => 'Iniciar Sesión', 'layout' => false]]);
     $router->get('', ['vista' => 'auth/login', 'vistaData' => ['titulo' => 'Iniciar Sesión', 'layout' => false]]);
 });

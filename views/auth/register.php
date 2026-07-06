@@ -3,20 +3,17 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>Ingresar - Control de Deudas</title>
+    <title>Crear cuenta - Control de Deudas</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Acceso exclusivo para usuarios registrados del sistema Control de Deudas.">
+    <meta name="description" content="Registro de nuevos usuarios en el sistema Control de Deudas.">
     <link rel="shortcut icon" href="<?php echo BASE_URL; ?>public/assets/images/favicon.ico">
 
-    <!-- MDI Icons -->
     <link href="<?php echo BASE_URL; ?>public/assets/css/icons.min.css" rel="stylesheet" type="text/css">
 
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- SweetAlert2 -->
     <script src="<?php echo BASE_URL; ?>public/assets/js/sweetalert2.all.min.js"></script>
 
     <script>
@@ -56,8 +53,7 @@
             background: #0d0e1c;
         }
 
-        /* ── Wrapper ── */
-        .login-wrapper {
+        .register-wrapper {
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -67,8 +63,7 @@
             overflow: hidden;
         }
 
-        /* Animated gradient background */
-        .login-wrapper::before {
+        .register-wrapper::before {
             content: '';
             position: fixed;
             inset: 0;
@@ -79,8 +74,7 @@
             z-index: 0;
         }
 
-        /* Overlay gradient on top of photo */
-        .login-wrapper::after {
+        .register-wrapper::after {
             content: '';
             position: fixed;
             inset: 0;
@@ -91,15 +85,14 @@
             z-index: 1;
         }
 
-        /* ── Card ── */
-        .login-card {
+        .register-card {
             position: relative;
             z-index: 10;
             display: grid;
             grid-template-columns: 1fr 1fr;
             width: 100%;
             max-width: 880px;
-            min-height: 520px;
+            min-height: 560px;
             border-radius: var(--radius-card);
             overflow: hidden;
             backdrop-filter: blur(22px) saturate(1.5);
@@ -114,14 +107,12 @@
                 opacity: 0;
                 transform: translateY(32px) scale(0.97);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
             }
         }
 
-        /* ── LEFT PANEL — Branding ── */
         .panel-brand {
             position: relative;
             background: rgba(255, 255, 255, 0.06);
@@ -135,7 +126,6 @@
             overflow: hidden;
         }
 
-        /* Subtle radial glow on brand panel */
         .panel-brand::before {
             content: '';
             position: absolute;
@@ -166,17 +156,8 @@
         }
 
         @keyframes logoPulse {
-
-            0%,
-            100% {
-                opacity: 0.6;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 1;
-                transform: scale(1.08);
-            }
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.08); }
         }
 
         .brand-logo-wrap img {
@@ -221,15 +202,12 @@
             letter-spacing: 0.01em;
         }
 
-
-
-        /* ── RIGHT PANEL — Form ── */
         .panel-form {
             background: rgba(255, 255, 255, 1);
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 3.5rem 3rem;
+            padding: 3rem 3rem;
         }
 
         .form-heading {
@@ -243,13 +221,12 @@
         .form-subheading {
             font-size: 0.875rem;
             color: var(--text-muted);
-            margin-bottom: 2.25rem;
+            margin-bottom: 1.75rem;
             line-height: 1.5;
         }
 
-        /* Field group */
         .field-group {
-            margin-bottom: 1.25rem;
+            margin-bottom: 1rem;
         }
 
         .field-label {
@@ -280,7 +257,7 @@
 
         .field-input {
             width: 100%;
-            padding: 0.78rem 0.9rem 0.78rem 2.6rem;
+            padding: 0.72rem 0.9rem 0.72rem 2.6rem;
             background: var(--input-bg);
             border: 1.5px solid var(--input-border);
             border-radius: var(--radius-input);
@@ -303,12 +280,11 @@
             box-shadow: 0 0 0 3.5px rgba(105, 108, 255, 0.14);
         }
 
-        .field-input:focus+.input-icon,
+        .field-input:focus + .input-icon,
         .input-wrap:focus-within .input-icon {
             color: var(--primary);
         }
 
-        /* Password toggle */
         .btn-toggle-pass {
             position: absolute;
             right: 0.85rem;
@@ -331,7 +307,6 @@
             padding-right: 2.8rem;
         }
 
-        /* Submit button */
         .btn-submit {
             width: 100%;
             padding: 0.85rem 1.5rem;
@@ -383,7 +358,6 @@
             font-size: 1.15rem;
         }
 
-        /* Spinner inside button */
         .spinner-sm {
             width: 1rem;
             height: 1rem;
@@ -395,18 +369,15 @@
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
 
-        /* Forgot password link */
-        .forgot-link-wrap {
+        .auth-link-wrap {
             text-align: center;
-            margin-top: 1.4rem;
+            margin-top: 1.2rem;
         }
 
-        .forgot-link {
+        .auth-link {
             font-size: 0.8125rem;
             color: var(--primary);
             text-decoration: none;
@@ -415,14 +386,13 @@
             border-bottom: 1px solid transparent;
         }
 
-        .forgot-link:hover {
+        .auth-link:hover {
             color: var(--primary-dark);
             border-bottom-color: var(--primary-dark);
         }
 
-        /* ── Responsive ── */
         @media (max-width: 680px) {
-            .login-card {
+            .register-card {
                 grid-template-columns: 1fr;
                 max-width: 420px;
             }
@@ -440,19 +410,16 @@
             }
 
             .panel-form {
-                padding: 2.25rem 2rem;
+                padding: 2rem;
             }
-
-
         }
     </style>
 </head>
 
 <body>
-    <div class="login-wrapper">
-        <div class="login-card">
+    <div class="register-wrapper">
+        <div class="register-card">
 
-            <!-- ── LEFT: Branding ── -->
             <div class="panel-brand">
                 <div class="brand-logo-wrap">
                     <img src="<?php echo BASE_URL; ?>public/assets/images/iso.png" alt="Logo Control de Deudas">
@@ -460,29 +427,36 @@
                 <div class="brand-name">Control de Deudas</div>
                 <div class="brand-sub">Unidad de gerentes</div>
                 <div class="brand-divider"></div>
-                <p class="brand-tagline">Gestiona y controla tus colecciones</p>
-
+                <p class="brand-tagline">Regístrate para gestionar tus cobros y deudas.</p>
             </div>
 
-            <!-- ── RIGHT: Form ── -->
             <div class="panel-form">
-                <h1 class="form-heading">Ingresar</h1>
-                <p class="form-subheading">Ingresa tus credenciales para continuar.</p>
+                <h1 class="form-heading">Crear cuenta</h1>
+                <p class="form-subheading">Completa tus datos para registrarte.</p>
 
-                <form id="formLogin" method="POST" novalidate>
+                <form id="formRegister" method="POST" novalidate>
+
+                    <div class="field-group">
+                        <label for="nombre" class="field-label">Nombre completo</label>
+                        <div class="input-wrap">
+                            <i class="mdi mdi-account-outline input-icon"></i>
+                            <input class="field-input" type="text" name="nombre" id="nombre" required placeholder="Tu nombre" autocomplete="name">
+                        </div>
+                    </div>
 
                     <div class="field-group">
                         <label for="email" class="field-label">Correo electronico</label>
                         <div class="input-wrap">
                             <i class="mdi mdi-email-outline input-icon"></i>
-                            <input
-                                class="field-input"
-                                type="email"
-                                name="email"
-                                id="email"
-                                required
-                                placeholder="correo@ejemplo.com"
-                                autocomplete="email">
+                            <input class="field-input" type="email" name="email" id="email" required placeholder="correo@ejemplo.com" autocomplete="email">
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="telefono" class="field-label">Telefono</label>
+                        <div class="input-wrap">
+                            <i class="mdi mdi-phone-outline input-icon"></i>
+                            <input class="field-input" type="tel" name="telefono" id="telefono" placeholder="0412-1234567" autocomplete="tel">
                         </div>
                     </div>
 
@@ -490,64 +464,68 @@
                         <label for="contrasena" class="field-label">Contrasena</label>
                         <div class="input-wrap">
                             <i class="mdi mdi-lock-outline input-icon"></i>
-                            <input
-                                class="field-input has-toggle"
-                                type="password"
-                                name="contrasena"
-                                id="contrasena"
-                                required
-                                placeholder="••••••••"
-                                autocomplete="current-password">
-                            <button
-                                type="button"
-                                class="btn-toggle-pass"
-                                id="togglePassword"
-                                aria-label="Mostrar u ocultar contrasena">
+                            <input class="field-input has-toggle" type="password" name="contrasena" id="contrasena" required placeholder="Minimo 6 caracteres" autocomplete="new-password">
+                            <button type="button" class="btn-toggle-pass" id="togglePassword" aria-label="Mostrar u ocultar contrasena">
                                 <i class="mdi mdi-eye-outline" id="togglePasswordIcon"></i>
                             </button>
                         </div>
                     </div>
 
-                    <button class="btn-submit" type="submit" id="btn-login">
-                        <i class="mdi mdi-login"></i>
-                        <span>Ingresar</span>
+                    <div class="field-group">
+                        <label for="contrasena_confirm" class="field-label">Confirmar contrasena</label>
+                        <div class="input-wrap">
+                            <i class="mdi mdi-lock-outline input-icon"></i>
+                            <input class="field-input has-toggle" type="password" name="contrasena_confirm" id="contrasena_confirm" required placeholder="Repite la contrasena" autocomplete="new-password">
+                            <button type="button" class="btn-toggle-pass" id="togglePasswordConfirm" aria-label="Mostrar u ocultar contrasena">
+                                <i class="mdi mdi-eye-outline" id="togglePasswordConfirmIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button class="btn-submit" type="submit" id="btn-register">
+                        <i class="mdi mdi-account-plus"></i>
+                        <span>Crear cuenta</span>
                     </button>
                 </form>
 
-                <div class="forgot-link-wrap">
-                    <a href="<?php echo BASE_URL; ?>registro" class="forgot-link">¿No tienes cuenta? Crear cuenta</a>
-                </div>
-                <div class="forgot-link-wrap" style="margin-top: 0.5rem;">
-                    <a href="#" class="forgot-link">¿Olvidaste tu contrasena?</a>
+                <div class="auth-link-wrap">
+                    <a href="<?php echo BASE_URL; ?>login" class="auth-link">¿Ya tienes cuenta? Inicia sesion</a>
                 </div>
             </div>
 
         </div>
     </div>
 
-    <!-- jQuery (needed by login.js AJAX) -->
     <script src="<?php echo BASE_URL; ?>public/assets/js/vendor.min.js"></script>
 
     <script>
-        // Toggle password visibility
         (function() {
             const toggle = document.getElementById('togglePassword');
             const input = document.getElementById('contrasena');
             const icon = document.getElementById('togglePasswordIcon');
-
             if (toggle && input && icon) {
                 toggle.addEventListener('click', function() {
                     const isPass = input.type === 'password';
                     input.type = isPass ? 'text' : 'password';
-                    icon.className = isPass ?
-                        'mdi mdi-eye-off-outline' :
-                        'mdi mdi-eye-outline';
+                    icon.className = isPass ? 'mdi mdi-eye-off-outline' : 'mdi mdi-eye-outline';
+                });
+            }
+        }());
+        (function() {
+            const toggle = document.getElementById('togglePasswordConfirm');
+            const input = document.getElementById('contrasena_confirm');
+            const icon = document.getElementById('togglePasswordConfirmIcon');
+            if (toggle && input && icon) {
+                toggle.addEventListener('click', function() {
+                    const isPass = input.type === 'password';
+                    input.type = isPass ? 'text' : 'password';
+                    icon.className = isPass ? 'mdi mdi-eye-off-outline' : 'mdi mdi-eye-outline';
                 });
             }
         }());
     </script>
 
-    <script type="module" src="<?php echo BASE_URL; ?>public/assets/js/modules/login.js"></script>
+    <script type="module" src="<?php echo BASE_URL; ?>public/assets/js/modules/register.js"></script>
 </body>
 
 </html>

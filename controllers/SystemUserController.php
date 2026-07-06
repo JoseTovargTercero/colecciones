@@ -670,6 +670,7 @@ class SystemUserController
                 'user_id' => $usuario['user_id'],
                 'nombre' => $usuario['nombre'],
                 'email' => $usuario['email'],
+                'telefono' => $usuario['telefono'] ?? null,
                 'nivel' => (int) $usuario['nivel'],
                 'estado' => (int) $usuario['estado'],
                 'dispositivo_token' => $usuario['dispositivo_token'], //
@@ -706,6 +707,7 @@ class SystemUserController
         $datosParaActualizar = [
             'nombre' => $in['nombre'] ?? null,
             'email' => $in['email'] ?? null,
+            'telefono' => $in['telefono'] ?? null,
         ];
 
         $contrasenaNueva = $in['contrasena'] ?? null;
