@@ -127,7 +127,10 @@
             rows: res.data || [],
             total: res.data?.length || 0
         }),
-        fNivel: (v) => `<span class="badge bg-secondary">Nivel ${v}</span>`,
+        fNivel: (v) => {
+            const cls = v === 'VENDEDOR' ? 'bg-secondary' : v === 'DISTRIBUIDOR' ? 'bg-primary' : 'bg-warning text-dark';
+            return `<span class="badge ${cls}">${v}</span>`;
+        },
         fAcc: (val, x) => {
             let xJ = JSON.stringify(x).replace(/'/g, "&apos;");
             return `<button class="btn btn-sm btn-info" onclick='window.v.edit(${xJ})'>Editar</button>

@@ -22,7 +22,7 @@ class VendedorModel
         $d['nombre'] = trim($d['nombre'] ?? '');
         $d['cedula'] = trim($d['cedula'] ?? '');
         $d['telefono'] = trim($d['telefono'] ?? '');
-        $d['nivel'] = (int)($d['nivel'] ?? 1);
+        $d['nivel'] = $d['nivel'];
         if (!$d['nombre'] || !$d['cedula']) throw new Exception('Nombre y cédula requeridos');
     }
 
