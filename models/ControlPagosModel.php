@@ -136,7 +136,8 @@ class ControlPagosModel
             $ids = implode(',', array_keys($allIds));
             $r = $this->db->query(
                 "SELECT id, monto, numero_operacion, comprobante,
-                        fecha_pago_comprobante, created_at
+                        fecha_pago_comprobante, created_at,
+                        monto_bs, tasa_dia
                  FROM comprobantes WHERE id IN ($ids)"
             );
             if ($r) {

@@ -22,22 +22,55 @@ class CargaPagosModel
         $numero_operacion = trim($d['numero_operacion'] ?? '');
         $fecha_pago     = trim($d['fecha_pago_comprobante'] ?? '');
         $cuota_id       = isset($d['cuota_id']) ? (int)$d['cuota_id'] : null;
+        $monto_bs       = (float)($d['monto_bs'] ?? 0);
+        $tasa_dia       = (float)($d['tasa_dia'] ?? 0);
         $comprobante    = $this->upload();
 
-        if (!$empresa_id || !$temporada_id || !$vendedor_id || !$tipo_pago || $monto <= 0) {
-            throw new Exception('Faltan datos obligatorios o monto invÃ¡lido.');
+
+        $campos = [[$empresa_id, 'empresa'], [$temporada_id, 'temporada'], [$vendedor_id, 'vendedor'], [$tipo_pago, 'tipo_pago'], [$monto, 'monto']];
+
+        foreach ($campos as $item) {
+            if (!$item[0]) {
+                throw new Exception($item[1] . ' Incorrecto: ' . $item[0]);
+            }
         }
 
+        /*
+        if (!$empresa_id || !$temporada_id || !$vendedor_id || !$tipo_pago || $monto <= 0) {
+            throw new Exception('Faltan datos obligatorios o monto invalido.');
+        }
+*/
         $this->db->begin_transaction();
 
         try {
+            // Verificar si el numero_operacion ya existe (si fue proporcionado)
+            if ($numero_operacion !== '') {
+                $check = $this->db->prepare("SELECT COUNT(*) FROM comprobantes WHERE numero_operacion = ?");
+                $check->bind_param('s', $numero_operacion);
+                $check->execute();
+                $cnt = 0;
+                $check->bind_result($cnt);
+                $check->fetch();
+                $check->close();
+                if ($cnt > 0) {
+                    throw new Exception("El número de operación «{$numero_operacion}» ya fue registrado en otro comprobante.");
+                }
+            }
+
             // Guardar comprobante primero para obtener el ID
             $stmt = $this->db->prepare(
-                "INSERT INTO comprobantes (empresa_id, temporada_id, vendedor_id, cuota_id, monto, numero_operacion, comprobante, fecha_pago_comprobante)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+                "INSERT INTO comprobantes (empresa_id, temporada_id, vendedor_id, cuota_id, monto, numero_operacion, comprobante, fecha_pago_comprobante, monto_bs, tasa_dia)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             );
-            $stmt->bind_param('ississss', $empresa_id, $temporada_id, $vendedor_id, $cuota_id, $monto, $numero_operacion, $comprobante, $fecha_pago);
-            $stmt->execute();
+            $stmt->bind_param('ississssdd', $empresa_id, $temporada_id, $vendedor_id, $cuota_id, $monto, $numero_operacion, $comprobante, $fecha_pago, $monto_bs, $tasa_dia);
+            try {
+                $stmt->execute();
+            } catch (mysqli_sql_exception $e) {
+                if ($e->getCode() === 1062 && $numero_operacion !== null && $numero_operacion !== '') {
+                    throw new Exception("El número de operación «{$numero_operacion}» ya fue registrado en otro comprobante.");
+                }
+                throw $e;
+            }
             $comp_id = $this->db->insert_id;
             $stmt->close();
 
@@ -387,7 +420,7 @@ class CargaPagosModel
              INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
              INNER JOIN colecciones_combos cc ON ac.coleccion_combo_id = cc.id
              WHERE ac.vendedor_id = ? AND ac.temporada_id = ? AND cc.empresa_id = ?
-             AND ac.estado = 'activa' AND c.estatus_pago = 'pendiente'
+             AND ac.estado IN ('activa','finalizada')
              ORDER BY c.fecha_pago ASC"
         );
         $stmt->bind_param('isi', $vendedor_id, $temporada_id, $empresa_id);
@@ -402,12 +435,13 @@ class CargaPagosModel
     {
         $stmt = $this->db->prepare(
             "SELECT cp.id, cp.cuota_id, cp.monto, cp.numero_operacion, cp.comprobante, cp.fecha_pago_comprobante, cp.created_at,
+                    cp.monto_bs, cp.tasa_dia,
                     c.numero_cuota
              FROM comprobantes cp
              INNER JOIN cuotas_coleccion c ON cp.cuota_id = c.id
              INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
              WHERE cp.empresa_id = ? AND cp.temporada_id = ? AND cp.vendedor_id = ?
-             AND ac.estado = 'activa' AND c.estatus_pago = 'pendiente'
+             AND ac.estado IN ('activa','finalizada')
              ORDER BY cp.created_at DESC"
         );
         $stmt->bind_param('isi', $empresa_id, $temporada_id, $vendedor_id);
@@ -492,6 +526,3 @@ class CargaPagosModel
         return $rows;
     }
 }
-
-
-

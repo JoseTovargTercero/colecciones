@@ -36,7 +36,8 @@ $menuConfig = buildMenuTree($flatMenuItems);
 $currentUrl = strtok($_SERVER['REQUEST_URI'], '?');
 ?>
 
-<aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+<aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme" style="overflow-y:auto;overflow-x:visible;scrollbar-width:none;-ms-overflow-style:none">
+    <style>#layout-menu::-webkit-scrollbar{display:none}</style>
     <div class="app-brand demo">
         <a href="<?= BASE_URL ?>" class="app-brand-link">
             <img src="<?= BASE_URL ?>/public/assets/images/logo-horizontal.png" alt="logo" height="90px">

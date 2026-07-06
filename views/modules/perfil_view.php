@@ -118,8 +118,7 @@
                             data-rules="noVacio|email|longitudMaxima:100" data-message-no-vacio="El email es requerido."
                             data-message-email="Debe ingresar un email válido."
                             data-message-longitud-maxima="El email no puede exceder los 100 caracteres."
-                            data-validate-duplicate-url="api/system_users/check_email"
-                            data-record-id-selector="#user_id" data-message-duplicado="Este email ya está en uso.">
+                            data-record-id-selector="#user_id">
                     </div>
 
 

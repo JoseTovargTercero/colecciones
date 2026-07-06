@@ -81,6 +81,10 @@
 
                 <!-- Tab 2: Historial -->
                 <div class="tab-pane fade" id="tab-historial" role="tabpanel">
+                    <div class="d-flex gap-2 mb-3 align-items-center">
+                        <input type="text" class="form-control" id="historialBuscador" placeholder="Buscar por número de operación..." style="width:280px">
+                        <small class="text-muted" id="historialCount"></small>
+                    </div>
                     <div id="cpHistorialBody">
                         <p class="text-center text-muted py-5">Seleccione empresa y campaña.</p>
                     </div>
@@ -124,15 +128,19 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label for="cpMonto" class="form-label" id="cpMontoLabel">Monto pagado (USD)</label>
+                                <label for="cpMontoBs" class="form-label">Monto pagado (BS)</label>
+                                <input type="number" placeholder="Monto en Bolívares" step="0.01" class="form-control" id="cpMontoBs" name="monto_bs">
+                            </div>
+                            <div class="mb-3">
+                                <label for="cpTasaBcv" class="form-label">Tasa BCV (Bs./USD)</label>
                                 <div class="input-group">
-                                    <input type="number" placeholder="Monto en Dolares" step="0.01" class="form-control" id="cpMonto" name="monto" required>
-                                    <?php if (!empty($_SESSION['bcv_ok']) && $_SESSION['bcv_ok']): ?>
-                                        <button class="btn btn-outline-success" type="button" id="btnBcvConvert" title="Convertir de Bs. a USD">
-                                            <i class="bx bx-dollar-circle"></i> Calcular BCV.
-                                        </button>
-                                    <?php endif; ?>
+                                    <input type="number" step="0.01" class="form-control" id="cpTasaBcv" name="tasa_dia" value="<?= htmlspecialchars($_SESSION['bcv_valor'] ?? '', ENT_QUOTES) ?>" readonly>
+                                    <button class="btn btn-outline-secondary" type="button" id="btnEditTasa" title="Editar tasa"><i class="bx bx-pencil"></i></button>
                                 </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="cpMonto" class="form-label" id="cpMontoLabel">Monto pagado (USD)</label>
+                                <input type="number" placeholder="Monto en Dolares" step="0.01" class="form-control" id="cpMonto" name="monto" required readonly>
                             </div>
                             <div class="mb-3">
                                 <label for="cpNumOp" class="form-label">Número de operación</label>
@@ -192,7 +200,7 @@
                 <div id="cpDeudaContent" style="display:none">
                     <!-- Resumen -->
                     <div class="row g-3 mb-4">
-                        <div class="col-sm-4">
+                        <div class="col-sm-4 d-none">
                             <div class="card bg-soft-primary border-0 shadow-sm">
                                 <div class="card-body text-center py-3">
                                     <div class="text-muted small text-uppercase fw-semibold tracking-wide">Deuda Total</div>
@@ -201,7 +209,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-sm-4">
+                        <div class="col-sm-6">
                             <div class="card bg-soft-success border-0 shadow-sm">
                                 <div class="card-body text-center py-3">
                                     <div class="text-muted small text-uppercase fw-semibold tracking-wide">Total Pagado</div>
@@ -210,7 +218,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-sm-4">
+                        <div class="col-sm-6">
                             <div class="card bg-soft-warning border-0 shadow-sm">
                                 <div class="card-body text-center py-3">
                                     <div class="text-muted small text-uppercase fw-semibold tracking-wide">Pendiente Efectivo</div>
@@ -234,7 +242,13 @@
                             </div>
                         </div>
                     </div>
-                    <h6 class="fw-semibold mb-2"><i class="bx bx-list-ul me-1 text-muted"></i>Detalle de cuotas</h6>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <h6 class="fw-semibold mb-0"><i class="bx bx-list-ul me-1 text-muted"></i>Detalle de cuotas</h6>
+                        <div class="form-check form-switch ms-auto">
+                            <input class="form-check-input" type="checkbox" id="cpTogglePagadas" role="switch">
+                            <label class="form-check-label small" for="cpTogglePagadas">Mostrar pagadas</label>
+                        </div>
+                    </div>
                     <div class="table-responsive" style="max-height:350px;overflow-y:auto">
                         <table class="table table-sm table-hover mb-0 border">
                             <thead class="table-light sticky-top">
@@ -265,6 +279,8 @@
                                         <tr>
                                             <th># Cuota</th>
                                             <th>Monto</th>
+                                            <th>Monto BS</th>
+                                            <th>Tasa</th>
                                             <th>N° Operación</th>
                                             <th>Archivo</th>
                                             <th>Fecha</th>
@@ -386,6 +402,35 @@
     </div>
 </div>
 
+<!-- Modal Ver Comprobante -->
+<div class="modal fade" id="cpVerCompModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bx bx-receipt me-2 text-primary"></i>Comprobante</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-7">
+                        <div id="cpVerCompImg" class="text-center p-3 bg-light rounded-3" style="min-height:200px">
+                            <img src="" class="img-fluid rounded shadow-sm" style="max-height:400px;object-fit:contain" alt="Comprobante">
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tbody id="cpVerCompBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     #aTabla th:nth-child(1),
     #aTabla td:nth-child(1) {
@@ -472,6 +517,7 @@
     let _agrupado = true;
     let _diasRetraso = 3;
     let _cpCuotas = [];
+    let _historialData = [];
 
     const badgeMap = {
         pendiente: '<span class="badge bg-secondary" title="PENDIENTE">P</span>',
@@ -843,6 +889,9 @@
         document.getElementById('cpVendedorLabel').textContent = vendedorNombre;
         document.getElementById('cpTipoPago').value = '';
         document.getElementById('cpMonto').value = '';
+        document.getElementById('cpMontoBs').value = '';
+        document.getElementById('cpTasaBcv').value = '<?= htmlspecialchars($_SESSION['bcv_valor'] ?? '', ENT_QUOTES) ?>';
+        document.getElementById('cpTasaBcv').readOnly = true;
         document.getElementById('cpNumOp').value = '';
         document.getElementById('cpComprobante').value = '';
         document.getElementById('cpFechaPago').value = '';
@@ -873,64 +922,32 @@
             });
     }
 
-    // BCV conversion
-    <?php if (!empty($_SESSION['bcv_ok']) && $_SESSION['bcv_ok']): ?>
-        document.getElementById('btnBcvConvert')?.addEventListener('click', function() {
-            const tasa = <?= $_SESSION['bcv_valor'] ?>;
-            Swal.fire({
-                target: document.getElementById('cpModal'),
-                title: 'Convertir Bs. a USD',
-                html: '<label class="form-label small">Monto en Bolívares (Bs.)</label>' +
-                    '<input id="swal-bcv-input" class="form-control form-control-lg" type="text" inputmode="decimal" placeholder="Ej: 124,90">' +
-                    '<div class="small text-muted mt-2">Tasa BCV: <strong>Bs. <?= number_format($_SESSION['bcv_valor'], 2, ',', '.') ?></strong></div>',
-                inputAttributes: {
-                    autocapitalize: 'off'
-                },
-                showCancelButton: true,
-                confirmButtonText: 'Convertir',
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#7367f0',
-                width: 380,
-                didOpen: () => {
-                    const inp = document.getElementById('swal-bcv-input');
-                    inp.focus();
-                    inp.addEventListener('keydown', function(e) {
-                        const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'];
-                        if (allowed.includes(e.key)) return;
-                        if (/^[0-9]$/.test(e.key)) return;
-                        if (e.key === ',' && !this.value.includes(',')) return;
-                        e.preventDefault();
-                    });
-                    inp.addEventListener('paste', function(e) {
-                        e.preventDefault();
-                        const text = (e.clipboardData || window.clipboardData).getData('text');
-                        const cleaned = text.replace(/[^0-9,]/g, '').replace(/(,.*),/g, '$1');
-                        this.value = cleaned;
-                    });
-                },
-                preConfirm: () => {
-                    const raw = document.getElementById('swal-bcv-input').value.trim();
-                    if (!raw) {
-                        Swal.showValidationMessage('Ingrese un monto');
-                        return false;
-                    }
-                    const num = parseFloat(raw.replace(',', '.').replace(/[^0-9.]/g, ''));
-                    if (isNaN(num) || num <= 0) {
-                        Swal.showValidationMessage('Monto inválido');
-                        return false;
-                    }
-                    return num;
-                }
-            }).then(result => {
-                if (!result.isConfirmed) return;
-                const usd = (result.value / tasa);
-                document.getElementById('cpMonto').value = usd.toFixed(2);
-                if (document.getElementById('cpTipoPago').value === 'abono') {
-                    simularAbonoPreview(parseFloat(document.getElementById('cpMonto').value));
-                }
-            });
-        });
-    <?php endif; ?>
+    // BCV auto-calc: BS / tasa = USD
+    function actualizarUsdDesdeBs() {
+        var bs = parseFloat(document.getElementById('cpMontoBs').value) || 0;
+        var tasa = parseFloat(document.getElementById('cpTasaBcv').value) || 0;
+        if (bs > 0 && tasa > 0) {
+            document.getElementById('cpMonto').value = (bs / tasa).toFixed(2);
+        } else {
+            document.getElementById('cpMonto').value = '';
+        }
+        if (document.getElementById('cpTipoPago').value === 'abono') {
+            simularAbonoPreview(parseFloat(document.getElementById('cpMonto').value) || 0);
+        }
+    }
+
+    document.getElementById('cpMontoBs').addEventListener('input', actualizarUsdDesdeBs);
+    document.getElementById('cpTasaBcv').addEventListener('input', actualizarUsdDesdeBs);
+
+    // Edit tasa button: remove disabled on click, re-disable on blur if empty
+    document.getElementById('btnEditTasa')?.addEventListener('click', function() {
+        var inp = document.getElementById('cpTasaBcv');
+        document.getElementById('cpTasaBcv').readOnly = false;
+        inp.focus();
+    });
+    document.getElementById('cpTasaBcv')?.addEventListener('blur', function() {
+        if (!this.value) this.setAttribute('disabled', '');
+    });
 
     // ============ Estatus de Deuda ============
 
@@ -952,6 +969,7 @@
                     return;
                 }
                 const d = json.data;
+                console.log(d)
                 const cuotas = d.cuotas || [];
                 const total = parseFloat(d.total_deuda) || 0;
                 const pagado = parseFloat(d.total_pagado) || 0;
@@ -995,7 +1013,8 @@
                         vencido: '<span class="badge bg-danger" title="VENCIDO">V</span>',
                         dentro_de_margen: '<span class="badge bg-warning text-dark" title="MARGEN DE PAGO">M</span>',
                     };
-                    return `<tr${tieneDescuento ? ' class="table-info"' : ''}>
+                    const esPagada = c.estatus_pago === 'realizado';
+                    return `<tr${tieneDescuento ? ' class="table-info"' : ''}${esPagada ? ' data-pagada="true" style="display:none"' : ''}>
                         <td class="fw-medium">${c.numero_cuota}</td>
                         <td>${c.coleccion_nombre || ''}</td>
                         <td>$${mp.toFixed(2)}</td>
@@ -1013,18 +1032,21 @@
                 if (comps.length) {
                     compBody.innerHTML = comps.map(cp => {
                         const archivo = cp.comprobante ? cp.comprobante.split('/').pop() : '—';
-                        const url = cp.comprobante ? BASE + cp.comprobante : '#';
                         const fecha = cp.fecha_pago_comprobante ? cp.fecha_pago_comprobante.slice(0, 10) : (cp.created_at ? cp.created_at.slice(0, 10) : '—');
+                        const bs = parseFloat(cp.monto_bs || 0);
+                        const tasa = parseFloat(cp.tasa_dia || 0);
                         return `<tr>
                             <td class="fw-medium">${cp.numero_cuota || '—'}</td>
                             <td>$${parseFloat(cp.monto || 0).toFixed(2)}</td>
+                            <td>${bs > 0 ? 'Bs.' + bs.toFixed(2) : '—'}</td>
+                            <td>${tasa > 0 ? tasa.toFixed(2) : '—'}</td>
                             <td>${cp.numero_operacion || '—'}</td>
-                            <td><a href="${url}" target="_blank" class="text-primary"><i class="bx bx-file me-1"></i>${archivo}</a></td>
+                            <td><button type="button" class="btn btn-sm btn-outline-primary py-0" onclick="verComprobante(this)" data-comp=\'${JSON.stringify(cp).replace(/'/g,"&#39;")}\'><i class="bx bx-file me-1"></i>${archivo}</button></td>
                             <td class="text-nowrap">${fecha}</td>
                         </tr>`;
                     }).join('');
                 } else {
-                    compBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">Sin comprobantes registrados.</td></tr>';
+                    compBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-2">Sin comprobantes registrados.</td></tr>';
                 }
 
                 // Premios
@@ -1048,6 +1070,10 @@
 
                 document.getElementById('cpDeudaLoading').style.display = 'none';
                 document.getElementById('cpDeudaContent').style.display = '';
+
+                // Reset toggle state for paid rows
+                var toggleEl = document.getElementById('cpTogglePagadas');
+                if (toggleEl) toggleEl.checked = false;
             })
             .catch(() => {
                 document.getElementById('cpDeudaLoading').innerHTML = '<p class="text-danger">Error de conexión.</p>';
@@ -1278,13 +1304,43 @@
 
     function _cpCompPill(c) {
         const archivo = c.comprobante ? c.comprobante.split('/').pop() : '—';
-        const url = c.comprobante ? BASE + c.comprobante : '#';
-        return `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 mb-1" style="border-radius:6px;font-size:.75rem" title="${c.fecha_pago_comprobante || ''}">
-            <i class="bx bx-file"></i>${archivo}
-            ${c.numero_operacion ? `<span class="text-muted fw-normal ms-1">· ${c.numero_operacion}</span>` : ''}
-            <span class="fw-semibold ms-1">$${parseFloat(c.monto || 0).toFixed(2)}</span>
-        </a>`;
+        const bs = parseFloat(c.monto_bs || 0);
+        const extra = bs > 0 ? ' Bs.' + bs.toFixed(2) : '';
+        return `<button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 mb-1" style="border-radius:6px;font-size:.75rem" onclick="verComprobante(this)" data-comp=\'${JSON.stringify(c).replace(/'/g,"&#39;")}\'>
+            <i class="bx bx-file"></i>${archivo}${extra}
+        </button>`;
     }
+
+    window.verComprobante = function(btn) {
+        try {
+            var c = JSON.parse(btn.getAttribute('data-comp'));
+        } catch(e) { return; }
+        var img = document.querySelector('#cpVerCompModal img');
+        if (img) img.src = c.comprobante ? BASE + c.comprobante : '';
+        var body = document.getElementById('cpVerCompBody');
+        if (!body) return;
+        var bs = parseFloat(c.monto_bs || 0);
+        var tasa = parseFloat(c.tasa_dia || 0);
+        var rows = [
+            ['N° Operación', c.numero_operacion || '—'],
+            ['Monto (USD)', '$' + parseFloat(c.monto || 0).toFixed(2)],
+            ['Monto (BS)', bs > 0 ? 'Bs.' + bs.toFixed(2) : '—'],
+            ['Tasa del día', tasa > 0 ? tasa.toFixed(2) : '—'],
+        ];
+        if (c.fecha_pago_comprobante) {
+            rows.push(['Fecha', c.fecha_pago_comprobante.slice(0, 10)]);
+        } else if (c.created_at) {
+            rows.push(['Registrado', c.created_at.slice(0, 10)]);
+        }
+        if (c.numero_cuota) {
+            rows.splice(0, 0, ['Cuota #', c.numero_cuota]);
+        }
+        body.innerHTML = rows.map(function(r) {
+            return '<tr><td class="fw-semibold text-muted small text-nowrap" style="width:40%">' + r[0] + '</td><td>' + r[1] + '</td></tr>';
+        }).join('');
+        var modal = new bootstrap.Modal(document.getElementById('cpVerCompModal'));
+        modal.show();
+    };
 
     function _cpHistorialResumen(cuotas) {
         const totalPagado = cuotas.reduce((s, c) => s + parseFloat(c.monto_a_pagar || 0), 0);
@@ -1312,80 +1368,114 @@
                 body.innerHTML = `<div class="alert alert-danger m-3">${json.message}</div>`;
                 return;
             }
-            const grupos = json.data || [];
+            _historialData = json.data || [];
             _historialCargado = true;
-
-            if (!grupos.length) {
-                body.innerHTML = '<div class="text-center py-5 text-muted"><i class="bx bx-receipt fs-1 d-block mb-2"></i>No hay pagos registrados para esta empresa y campaña.</div>';
-                return;
-            }
-
-            // Build timeline-stepped layout
-            body.innerHTML = grupos.map((g, gi) => {
-                const badgeRealizado = c => c.estatus_pago === 'realizado' ?
-                    '<span class="badge bg-success bg-gradient" style="font-size:.65rem">Pagado</span>' :
-                    `<span class="badge bg-secondary" style="font-size:.65rem">${c.estatus_pago}</span>`;
-                const badgeATiempo = c => c.pagado_a_tiempo == 1 ?
-                    '<span class="badge bg-soft-success text-success" style="font-size:.65rem"><i class="bx bx-check fs-6"></i></span>' :
-                    '';
-
-                return `<div class="border rounded-3 mb-3 shadow-sm overflow-hidden" style="border-radius:10px!important">
-                    <div class="d-flex align-items-center justify-content-between px-3 py-3" style="background:linear-gradient(135deg,#f8f9fa 0%,#fff 100%);border-bottom:1px solid #e9ecef">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="d-flex align-items-center justify-content-center rounded-circle" style="width:40px;height:40px;background:#7367f0;color:#fff;font-size:1.1rem">
-                                <i class="bx bx-package"></i>
-                            </div>
-                            <div>
-                                <div class="fw-semibold" style="font-size:.95rem">${g.coleccion_nombre || 'Colección'}</div>
-                                <div class="small text-muted">
-                                    <i class="bx bx-user me-1"></i>${g.vendedor_nombre || '—'}
-                                    ${g.vendedor_cedula ? `<span class="ms-2">· ${g.vendedor_cedula}</span>` : ''}
-                                    ${g.coleccion_tipo ? `<span class="ms-2 badge bg-light text-muted fw-normal">${g.coleccion_tipo}</span>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                        ${_cpHistorialResumen(g.cuotas || [])}
-                    </div>
-
-                    <div class="p-0">
-                        <table class="table table-hover align-middle mb-0" style="font-size:.85rem">
-                            <thead class="table-light small text-muted text-uppercase" style="letter-spacing:.03rem;font-size:.7rem">
-                                <tr>
-                                    <th style="width:60px" class="ps-3">#</th>
-                                    <th style="width:110px">Pagado</th>
-                                    <th>Monto</th>
-                                    <th>Pagado</th>
-                                    <th style="width:60px" class="text-center">Tiempo</th>
-                                    <th>Comprobante(s)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${(g.cuotas || []).map(c => {
-                                    const comps = c.comprobantes || [];
-                                    return `<tr>
-                                        <td class="fw-semibold ps-3">${c.numero_cuota || '—'}</td>
-                                        <td class="text-nowrap">${c.fecha_pago || '—'}</td>
-                                        <td class="fw-semibold">$${parseFloat(c.monto_a_pagar || 0).toFixed(2)}</td>
-                                        <td class="fw-semibold text-success">$${parseFloat(c.monto_pagado || 0).toFixed(2)}</td>
-                                        <td class="text-center">${badgeATiempo(c)}</td>
-                                        <td>
-                                            <div class="d-flex flex-wrap gap-1">
-                                                ${comps.length ? comps.map(_cpCompPill).join('') : '<span class="text-muted" style="font-size:.8rem">—</span>'}
-                                            </div>
-                                        </td>
-                                    </tr>`;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>`;
-            }).join('');
+            renderHistorial();
         } catch (e) {
             body.innerHTML = '<div class="alert alert-danger m-3">Error de conexión.</div>';
         }
     }
 
+    function renderHistorial() {
+        var q = (document.getElementById('historialBuscador').value || '').toLowerCase().trim();
+        var filtrados = _historialData.map(function(g) {
+            var cuotas = (g.cuotas || []).map(function(c) {
+                var comps = (c.comprobantes || []).filter(function(cp) {
+                    if (!q) return true;
+                    return (cp.numero_operacion || '').toLowerCase().includes(q);
+                });
+                return { cuota: c, comps: comps };
+            });
+            var hasMatch = q ? cuotas.some(function(x) { return x.comps.length > 0; }) : true;
+            return { grupo: g, cuotas: cuotas, visible: hasMatch };
+        });
+
+        var body = document.getElementById('cpHistorialBody');
+        var countEl = document.getElementById('historialCount');
+        var visibleCount = filtrados.filter(function(f) { return f.visible; }).length;
+
+        if (countEl) countEl.textContent = visibleCount + ' resultado' + (visibleCount !== 1 ? 's' : '');
+
+        if (!_historialData.length) {
+            body.innerHTML = '<div class="text-center py-5 text-muted"><i class="bx bx-receipt fs-1 d-block mb-2"></i>No hay pagos registrados para esta empresa y campaña.</div>';
+            return;
+        }
+
+        if (!q && !_historialData.length) return;
+
+        body.innerHTML = filtrados.map(function(f) {
+            if (!f.visible) return '';
+            var g = f.grupo;
+            return '<div class="border rounded-3 mb-3 shadow-sm overflow-hidden" style="border-radius:10px!important">' +
+                '<div class="d-flex align-items-center justify-content-between px-3 py-3" style="background:linear-gradient(135deg,#f8f9fa 0%,#fff 100%);border-bottom:1px solid #e9ecef">' +
+                    '<div class="d-flex align-items-center gap-3">' +
+                        '<div class="d-flex align-items-center justify-content-center rounded-circle" style="width:40px;height:40px;background:#7367f0;color:#fff;font-size:1.1rem">' +
+                            '<i class="bx bx-package"></i>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div class="fw-semibold" style="font-size:.95rem">' + (g.coleccion_nombre || 'Colección') + '</div>' +
+                            '<div class="small text-muted">' +
+                                '<i class="bx bx-user me-1"></i>' + (g.vendedor_nombre || '—') +
+                                (g.vendedor_cedula ? '<span class="ms-2">· ' + g.vendedor_cedula + '</span>' : '') +
+                                (g.coleccion_tipo ? '<span class="ms-2 badge bg-light text-muted fw-normal">' + g.coleccion_tipo + '</span>' : '') +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    _cpHistorialResumen(f.cuotas.map(function(x) { return x.cuota; })) +
+                '</div>' +
+                '<div class="p-0">' +
+                    '<table class="table table-hover align-middle mb-0" style="font-size:.85rem">' +
+                        '<thead class="table-light small text-muted text-uppercase" style="letter-spacing:.03rem;font-size:.7rem">' +
+                            '<tr>' +
+                                '<th style="width:60px" class="ps-3">#</th>' +
+                                '<th style="width:110px">Pagado</th>' +
+                                '<th>Monto</th>' +
+                                '<th>Pagado</th>' +
+                                '<th style="width:60px" class="text-center">Tiempo</th>' +
+                                '<th>Comprobante(s)</th>' +
+                            '</tr>' +
+                        '</thead>' +
+                        '<tbody>' +
+                            f.cuotas.map(function(x) {
+                                var c = x.cuota;
+                                var comps = x.comps;
+                                var at = c.pagado_a_tiempo == 1 ? '<span class="badge bg-soft-success text-success" style="font-size:.65rem"><i class="bx bx-check fs-6"></i></span>' : '';
+                                return '<tr>' +
+                                    '<td class="fw-semibold ps-3">' + (c.numero_cuota || '—') + '</td>' +
+                                    '<td class="text-nowrap">' + (c.fecha_pago || '—') + '</td>' +
+                                    '<td class="fw-semibold">$' + parseFloat(c.monto_a_pagar || 0).toFixed(2) + '</td>' +
+                                    '<td class="fw-semibold text-success">$' + parseFloat(c.monto_pagado || 0).toFixed(2) + '</td>' +
+                                    '<td class="text-center">' + at + '</td>' +
+                                    '<td>' +
+                                        '<div class="d-flex flex-wrap gap-1">' +
+                                            (comps.length ? comps.map(_cpCompPill).join('') : '<span class="text-muted" style="font-size:.8rem">—</span>') +
+                                        '</div>' +
+                                    '</td>' +
+                                '</tr>';
+                            }).join('') +
+                        '</tbody>' +
+                    '</table>' +
+                '</div>' +
+            '</div>';
+        }).join('') || '<div class="text-center py-5 text-muted"><i class="bx bx-search fs-1 d-block mb-2"></i>No se encontraron comprobantes con ese número de operación.</div>';
+    }
+
     // Re-load historial when filters change (reset flag so data reloads next time tab opens)
     document.getElementById('empresa').addEventListener('change', () => _historialCargado = false);
     document.getElementById('campaniaSelect').addEventListener('change', () => _historialCargado = false);
+
+    // Historial search filter
+    document.getElementById('historialBuscador').addEventListener('input', function() {
+        if (_historialCargado) renderHistorial();
+    });
+
+    // Delegated: toggle paid rows in deuda modal
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.id === 'cpTogglePagadas') {
+            var show = e.target.checked;
+            document.querySelectorAll('#cpDeudaTableBody tr[data-pagada]').forEach(function(tr) {
+                tr.style.display = show ? '' : 'none';
+            });
+        }
+    });
 </script>

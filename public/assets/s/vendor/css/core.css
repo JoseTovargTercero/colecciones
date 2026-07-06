@@ -17780,3 +17780,7 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+.swal2-container {
+  z-index: 99999 !important;
+}
