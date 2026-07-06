@@ -91,6 +91,7 @@ $router->group(['middleware' => LoginSuscripcionMiddleware::class], function ($r
     $router->get('/control_pagos',       ['vista' => 'modules/control_pagos_view',       'vistaData' => ['titulo' => 'Control de pagos']]);
     $router->get('/preferencias-premios',['vista' => 'modules/preferencias_premios_view','vistaData' => ['titulo' => 'Preferencias de Premios']]);
     $router->get('/dashboard',           ['vista' => 'modules/dashboard_view',           'vistaData' => ['titulo' => 'Dashboard']]);
+    $router->get('/mi-suscripcion',      ['vista' => 'modules/mi_suscripcion_view',      'vistaData' => ['titulo' => 'Mi Suscripción']]);
 });
 
 // Rutas de suscripción (requieren sesión, NO verifican suscripción para evitar bucle)

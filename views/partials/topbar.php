@@ -177,6 +177,12 @@ if ($_susc && !empty($_susc['fecha_fin'])) {
                         </a>
                     </li>
                     <li>
+                        <a class="dropdown-item" href="<?= BASE_URL ?>mi-suscripcion">
+                            <i class="bx bx-credit-card-front me-2"></i>
+                            <span class="align-middle">Ver mi suscripción</span>
+                        </a>
+                    </li>
+                    <li>
                         <div class="dropdown-divider"></div>
                     </li>
                     <li>
