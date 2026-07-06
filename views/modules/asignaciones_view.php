@@ -387,6 +387,10 @@
                 l: t.nombre
             }));
 
+            // Inicializar Select2 en los selects del wizard
+            $('#aVendedor').select2({ width: '100%', dropdownParent: $('#aWStep1') });
+            $('#aColeccion').select2({ width: '100%', dropdownParent: $('#aWStep2') });
+
             this.initTabs();
             this.load();
             document.getElementById('aEmpresa').addEventListener('change', () => this.onEmpresaChange());
@@ -418,6 +422,7 @@
                 l: `${c.nombre} (${c.tipo})`,
                 data: c
             }), 'Seleccione colección...');
+            $('#aColeccion').select2('destroy').select2({ width: '100%', dropdownParent: $('#aWStep2') });
 
             const temps = this.temporadas.filter(t => t.empresa_id === empId);
             this._fillSelect('aTemporada', temps, t => ({
@@ -819,12 +824,17 @@
             document.getElementById('aResumenCard').style.display = 'none';
             document.getElementById('aResumenEmpty').style.display = 'block';
             this.cuotasCalc = [];
+            // Re-init Select2 (pudo ser destruido al ocultar)
+            $('#aVendedor').select2({ width: '100%', dropdownParent: $('#aWStep1') });
             this.goStep(1);
         },
 
         hideForm() {
             document.getElementById('aFormView').style.display = 'none';
             document.getElementById('aListView').style.display = '';
+            // Destroy Select2 al ocultar para evitar problemas de posicionamiento
+            try { $('#aVendedor').select2('destroy'); } catch(e) {}
+            try { $('#aColeccion').select2('destroy'); } catch(e) {}
         }
     };
 
