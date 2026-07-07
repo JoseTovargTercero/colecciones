@@ -57,13 +57,13 @@ class DashboardModel
         $r = $this->db->query("SELECT COALESCE(SUM(a.ganancia_gerente),0) s FROM asignaciones_colecciones a $empresaJoin WHERE a.usuario_id='$u' AND a.estado='activa' AND a.temporada_id=$tid $empresaWhere");
         $ganancia_proyectada = $r ? (float)$r->fetch_assoc()['s'] : 0;
 
-        // 4. Tasa de Conversión
-        $r = $this->db->query("SELECT COUNT(*) total, SUM(CASE WHEN a.estado='finalizada' THEN 1 ELSE 0 END) finalizadas FROM asignaciones_colecciones a $empresaJoin WHERE a.usuario_id='$u' AND a.temporada_id=$tid $empresaWhere");
-        $conversion = ['tasa' => 0, 'total' => 0, 'finalizadas' => 0];
+        // 4. Tasa de Conversión (cuotas con estatus_pago = 'realizado')
+        $r = $this->db->query("SELECT COUNT(*) total, SUM(CASE WHEN c.estatus_pago='realizado' THEN 1 ELSE 0 END) realizadas FROM cuotas_coleccion c INNER JOIN asignaciones_colecciones a ON c.asignacion_id = a.id $empresaJoin WHERE a.usuario_id='$u' AND a.temporada_id=$tid $empresaWhere");
+        $conversion = ['tasa' => 0, 'total' => 0, 'realizadas' => 0];
         if ($r && $row = $r->fetch_assoc()) {
             $conversion['total'] = (int)$row['total'];
-            $conversion['finalizadas'] = (int)$row['finalizadas'];
-            $conversion['tasa'] = $row['total'] > 0 ? round(($row['finalizadas'] / $row['total']) * 100, 1) : 0;
+            $conversion['realizadas'] = (int)$row['realizadas'];
+            $conversion['tasa'] = $row['total'] > 0 ? round(($row['realizadas'] / $row['total']) * 100, 1) : 0;
         }
 
         // 5. Top Vendedores (por cantidad de asignaciones)
@@ -125,6 +125,18 @@ class DashboardModel
         $ranking_responsabilidad = $r ? $r->fetch_all(MYSQLI_ASSOC) : [];
         $proyeccion = [];
 
+        // 10. Cuotas pagadas a tiempo agrupadas por fecha (últimos 4 grupos)
+        $r = $this->db->query(
+            "SELECT c.fecha_pago, COUNT(*) as total
+             FROM cuotas_coleccion c
+             INNER JOIN asignaciones_colecciones a ON c.asignacion_id = a.id $empresaJoin
+             WHERE a.usuario_id='$u' AND a.temporada_id=$tid $empresaWhere AND c.pagado_a_tiempo = 1
+             GROUP BY c.fecha_pago
+             ORDER BY c.fecha_pago DESC
+             LIMIT 4"
+        );
+        $cuotas_pagadas_por_fecha = $r ? array_reverse($r->fetch_all(MYSQLI_ASSOC)) : [];
+
         return [
             'temporada' => $t,
             'empresa_id' => $empresa_id,
@@ -138,6 +150,7 @@ class DashboardModel
             'proyeccion' => $proyeccion,
             'pagos_pendientes' => $pagos_pendientes,
             'ranking_responsabilidad' => $ranking_responsabilidad,
+            'cuotas_pagadas_por_fecha' => $cuotas_pagadas_por_fecha,
         ];
     }
 }
