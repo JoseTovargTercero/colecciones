@@ -247,7 +247,7 @@
 
     function renderDashboard(d) {
         const t = d.temporada;
-        const subtitle = t ? `Temporada actual: <strong>${t.nombre}</strong>` : 'Sin temporada activa';
+        const subtitle = t ? `Campaña actual: <strong>${t.nombre}</strong>` : 'Sin temporada activa';
         document.getElementById('dashboardSubtitle').innerHTML = subtitle;
 
         const html = `
@@ -739,9 +739,12 @@
                 }
             }
         };
-        if (_chartOrder) _chartOrder.destroy();
-        _chartOrder = new ApexCharts(document.querySelector('#orderStatisticsChart'), orderOpts);
-        _chartOrder.render();
+        const orderEl = document.querySelector('#orderStatisticsChart');
+        if (orderEl) {
+            if (_chartOrder) _chartOrder.destroy();
+            _chartOrder = new ApexCharts(orderEl, orderOpts);
+            _chartOrder.render();
+        }
 
         // 5. Income/Expenses Area Chart (Pagos Pendientes)
         const pp = d.pagos_pendientes || {};
