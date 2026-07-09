@@ -173,6 +173,7 @@
     let _chartGrowth = null;
     let _chartProfile = null;
     let _chartOrder = null;
+    let _chartExpenses = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
         window._dashTemporadas = [];
@@ -441,7 +442,6 @@
                                     <div class="flex-shrink-0">
                                         <div id="expensesOfWeek"></div>
                                     </div>
-                                   
                                 </div>
                             </div>
                         </div>
@@ -754,7 +754,7 @@
         const incomeOpts = {
             series: [{
                 name: 'Pendiente',
-                data: ppData.length ? ppData : [24, 21, 30, 22, 42, 26, 35, 29]
+                data: ppData.length ? ppData : [0, 0, 0, 0, 0, 0, 0, 0]
             }],
             chart: {
                 height: 215,
@@ -842,6 +842,45 @@
         _chartIngresos = new ApexCharts(document.querySelector('#chartIngresos'), incomeOpts);
         _chartIngresos.render();
 
+        // 6. Expenses of Week — Cuotas pendientes por fecha_pago
+        const cpf = d.cuotas_pendientes_fecha || [];
+        const cpfLabels = cpf.map(r => r.fecha_pago);
+        const cpfData = cpf.map(r => parseInt(r.total) || 0);
+
+        const expensesOpts = {
+            chart: {
+                height: 80,
+                type: 'bar',
+                toolbar: { show: false },
+                sparkline: { enabled: true }
+            },
+            grid: { show: false, padding: { right: 8 } },
+            colors: ['#696cff'],
+            plotOptions: {
+                bar: {
+                    columnWidth: '60%',
+                    borderRadius: 3,
+                    distributed: true
+                }
+            },
+            dataLabels: { enabled: false },
+            series: [{
+                data: cpfData.length ? cpfData : [0]
+            }],
+            xaxis: {
+                categories: cpfLabels.length ? cpfLabels : [''],
+                labels: { show: false },
+                axisBorder: { show: false },
+                axisTicks: { show: false }
+            },
+            yaxis: { show: false }
+        };
+        if (_chartExpenses) _chartExpenses.destroy();
+        const el = document.querySelector('#expensesOfWeek');
+        if (el) {
+            _chartExpenses = new ApexCharts(el, expensesOpts);
+            _chartExpenses.render();
+        }
 
     }
 </script>

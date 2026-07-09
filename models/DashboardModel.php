@@ -137,6 +137,20 @@ class DashboardModel
         );
         $cuotas_pagadas_por_fecha = $r ? array_reverse($r->fetch_all(MYSQLI_ASSOC)) : [];
 
+        // 11. Cuotas pendientes por cobrar agrupadas por fecha_pago
+        $r = $this->db->query(
+            "SELECT c.fecha_pago, COUNT(*) as total
+             FROM cuotas_coleccion c
+             INNER JOIN asignaciones_colecciones a ON c.asignacion_id = a.id $empresaJoin
+             WHERE a.usuario_id = '$u'
+               AND a.temporada_id = $tid
+               $empresaWhere
+               AND c.estatus_pago != 'realizado'
+             GROUP BY c.fecha_pago
+             ORDER BY c.fecha_pago ASC"
+        );
+        $cuotas_pendientes_fecha = $r ? $r->fetch_all(MYSQLI_ASSOC) : [];
+
         return [
             'temporada' => $t,
             'empresa_id' => $empresa_id,
@@ -151,6 +165,7 @@ class DashboardModel
             'pagos_pendientes' => $pagos_pendientes,
             'ranking_responsabilidad' => $ranking_responsabilidad,
             'cuotas_pagadas_por_fecha' => $cuotas_pagadas_por_fecha,
+            'cuotas_pendientes_fecha' => $cuotas_pendientes_fecha,
         ];
     }
 }
