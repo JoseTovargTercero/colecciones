@@ -458,7 +458,7 @@
                     <img src="<?php echo BASE_URL; ?>public/assets/images/iso.png" alt="Logo Control de Deudas">
                 </div>
                 <div class="brand-name">Control de Deudas</div>
-                <div class="brand-sub">Unidad de gerentes</div>
+                <div class="brand-sub">unidad de ventas</div>
                 <div class="brand-divider"></div>
                 <p class="brand-tagline">Gestiona y controla tus colecciones</p>
 
