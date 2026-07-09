@@ -151,38 +151,12 @@ class SystemUserController
                 return;
             }
 
-            $nivel = (int) ($usuario['nivel'] ?? ($auth['nivel'] ?? 1));
-            $userType = ($nivel === 0) ? 'administrator' : 'user';
-
-            // ----- PERMISOS -----
-            $permisosArray = [];
-            $permisosModel = new \UsersPermisosModel();
-
-            if ($nivel === 0) {
-                // Admin: todos los permisos de menú
-                $permisos = $permisosModel->listarTodosLosPermisosDeMenu();
-                $permisosArray = array_values(array_filter(array_map(static function ($p) {
-                    return $p['menu']['url'] ?? '';
-                }, is_array($permisos) ? $permisos : [])));
-            } else {
-                // Usuario estándar: usar los permisos que devolvió loginConToken o consultarlos
-                $permisos = $auth['permisos'] ?? $permisosModel->listarPermisosConMenu($usuario['user_id']);
-                $permisosArray = array_values(array_filter(array_map(static function ($p) {
-                    return $p['menu']['url'] ?? '';
-                }, is_array($permisos) ? $permisos : [])));
-
-                if (empty($permisosArray)) {
-                    // Sin permisos asignados => bloquear login
-                    $SessionManagementModel->create($usuario['user_id'], $userType, $deviceId, $deviceType, false, 'Sin permisos asignados');
-                    $this->jsonResponse(false, 'El usuario no tiene permisos asignados.', null, 403);
-                    return;
-                }
-            }
+            $tipo = $usuario['tipo'] ?? ($auth['tipo'] ?? 'vendedor');
 
             // ----- Crear sesión y token de sesión -----
             $sessionData = $SessionManagementModel->create(
                 $usuario['user_id'],
-                $userType,
+                'user',
                 $deviceId,
                 $deviceType,
                 true,
@@ -193,9 +167,8 @@ class SystemUserController
             $_SESSION['logged_in'] = true;
             $_SESSION['user_id'] = $usuario['user_id'];
             $_SESSION['nombre'] = $usuario['nombre'] ?? ($auth['nombre'] ?? 'Usuario');
-            $_SESSION['nivel'] = $nivel;
-            $_SESSION['user_type'] = $userType;
-            $_SESSION['permisos'] = $permisosArray;
+            $_SESSION['user_type'] = 'user';
+            $_SESSION['permisos'] = ['*'];
             $_SESSION['session_id'] = $sessionData['session_id'];
 
             // ----- Payload -----
@@ -254,26 +227,12 @@ class SystemUserController
 
             // ✅ Éxito
             $usuario = $result['user'];
-            $nivel = (int) $usuario['nivel'];
-            $userType = ($nivel === 0) ? 'administrator' : 'user';
 
             $_SESSION['logged_in'] = true;
             $_SESSION['user_id'] = $usuario['user_id'];
             $_SESSION['nombre'] = $usuario['nombre'] ?? 'Usuario';
-            $_SESSION['nivel'] = $nivel;
-            $_SESSION['user_type'] = $userType;
-
-            if ($nivel === 0) {
-                $_SESSION['permisos'] = ['*'];
-            } else {
-                $permisosModel = new \UsersPermisosModel(); // Usar \ si hay namespace
-                $permisos = $permisosModel->listarPermisosConMenu($usuario['user_id']);
-                if (empty($permisos)) {
-                    $this->jsonResponse(false, 'El usuario no tiene permisos asignados.', null, 403);
-                    return;
-                }
-                $_SESSION['permisos'] = array_map(fn($p) => $p['menu']['url'] ?? '', $permisos);
-            }
+            $_SESSION['user_type'] = 'user';
+            $_SESSION['permisos'] = ['*'];
 
 
             $sessionId = $user['session_id'];
@@ -426,32 +385,17 @@ class SystemUserController
             // ✅ Éxito
             unset($_SESSION[$keyIntentos]);
             $usuario = $result['user'];
-            $nivel = (int) $usuario['nivel'];
-            $userType = ($nivel === 0) ? 'administrator' : 'user';
 
             $_SESSION['logged_in'] = true;
             $_SESSION['user_id'] = $usuario['user_id'];
             $_SESSION['nombre'] = $usuario['nombre'] ?? 'Usuario';
-            $_SESSION['nivel'] = $nivel;
-            $_SESSION['user_type'] = $userType;
-
-            if ($nivel === 0) {
-                $_SESSION['permisos'] = ['*'];
-            } else {
-                $permisosModel = new \UsersPermisosModel(); // Usar \ si hay namespace
-                $permisos = $permisosModel->listarPermisosConMenu($usuario['user_id']);
-                if (empty($permisos)) {
-                    $SessionManagementModel->create($usuario['user_id'], $userType, $deviceId, $deviceType, false, 'Sin permisos asignados');
-                    $this->jsonResponse(false, 'El usuario no tiene permisos asignados.', null, 403);
-                    return;
-                }
-                $_SESSION['permisos'] = array_map(fn($p) => $p['menu']['url'] ?? '', $permisos);
-            }
+            $_SESSION['user_type'] = 'user';
+            $_SESSION['permisos'] = ['*'];
 
             // --- MODIFICACIÓN: Capturar respuesta array ---
             $sessionData = $SessionManagementModel->create(
                 $usuario['user_id'],
-                $userType,
+                'user',
                 $deviceId,
                 $deviceType,
                 true,
@@ -672,6 +616,7 @@ class SystemUserController
                 'email' => $usuario['email'],
                 'telefono' => $usuario['telefono'] ?? null,
                 'nivel' => (int) $usuario['nivel'],
+                'tipo' => $usuario['tipo'] ?? null,
                 'estado' => (int) $usuario['estado'],
                 'dispositivo_token' => $usuario['dispositivo_token'], //
                 'created_at' => $usuario['created_at'],

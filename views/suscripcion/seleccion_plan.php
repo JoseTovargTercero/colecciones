@@ -449,11 +449,49 @@
 <body>
 
     <?php
+    require_once __DIR__ . '/../../models/SystemUserModel.php';
     $userId     = $_SESSION['user_id'] ?? '';
     $nombre     = $_SESSION['nombre']  ?? 'Usuario';
+    $userModel  = new SystemUserModel();
+    $userData   = $userId ? $userModel->obtenerPorId($userId) : null;
+    $tipoUsuario = $userData ? ($userData['tipo'] ?? 'vendedor') : 'vendedor';
+
     $planRow    = isset($planes[0]) ? $planes[0] : ['precio_mensual' => 25, 'precio_anual' => 260];
-    $pMensual   = number_format($planRow['precio_mensual'], 2);
-    $pAnual     = number_format($planRow['precio_anual'],   2);
+
+    if ($tipoUsuario === 'gerente') {
+        $planNombre = "Plan de Gerentes";
+        $pMensualVal = $planRow['precio_mensual'];
+        $pAnualVal = $planRow['precio_anual'];
+        $caracteristicasMensual = [
+            'Acceso completo a todas las funciones gerenciales',
+            'Soporte prioritario incluido',
+            'Sin compromiso de permanencia'
+        ];
+        $caracteristicasAnual = [
+            'Acceso completo a todas las funciones gerenciales',
+            'Soporte prioritario incluido',
+            'Precio fijo garantizado todo el año'
+        ];
+    } else {
+        $planNombre = "Plan de Vendedores";
+        $pMensualVal = 5;
+        $pAnualVal = 40;
+        $caracteristicasMensual = [
+            'Acceso a funciones de ventas y clientes',
+            'Soporte estándar incluido',
+            'Sin compromiso de permanencia'
+        ];
+        $caracteristicasAnual = [
+            'Acceso a funciones de ventas y clientes',
+            'Soporte estándar incluido',
+            'Precio fijo garantizado todo el año'
+        ];
+    }
+
+    $pMensual   = number_format($pMensualVal, 2);
+    $pAnual     = number_format($pAnualVal, 2);
+    $ahorroAnual = number_format(($pMensualVal * 12) - $pAnualVal, 2);
+
     $diasRestantes = 0;
     if ($suscripcion && $suscripcion['tipo_pago'] === 'trial') {
         $hoy = new DateTime('today');
@@ -466,7 +504,7 @@
         <div class="badge-trial">
             <i class="mdi mdi-gift-outline"></i> &nbsp;Prueba gratuita activa
         </div>
-        <h1>Elige tu <span>plan</span></h1>
+        <h1><?= htmlspecialchars($planNombre) ?></h1>
         <p class="subtitle">Mismo nivel de acceso en ambos planes. El plan anual te ahorra <strong style="color:var(--green)">$40</strong> vs. pagar mensual.</p>
     </div>
 
@@ -490,9 +528,9 @@
             <div class="plan-price"><sup>$</sup><?= $pMensual ?></div>
             <p class="plan-period">por mes · renovación automática</p>
             <ul class="plan-features">
-                <li>Acceso completo a todas las funciones</li>
-                <li>Soporte incluido</li>
-                <li>Sin compromiso de permanencia</li>
+                <?php foreach ($caracteristicasMensual as $caracteristica): ?>
+                    <li><?= $caracteristica ?></li>
+                <?php endforeach; ?>
             </ul>
         </div>
 
@@ -506,11 +544,11 @@
             <p class="plan-name">Anual</p>
             <div class="plan-price" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent"><sup>$</sup><?= $pAnual ?></div>
             <p class="plan-period">por año · un solo pago</p>
-            <p class="plan-saving"><i class="mdi mdi-cash-multiple"></i> Ahorra $<?= number_format(($planRow['precio_mensual'] * 12) - $planRow['precio_anual'], 2) ?> vs. mensual</p>
+            <p class="plan-saving"><i class="mdi mdi-cash-multiple"></i> Ahorra $<?= $ahorroAnual ?> vs. mensual</p>
             <ul class="plan-features">
-                <li>Acceso completo a todas las funciones</li>
-                <li>Soporte incluido</li>
-                <li>Precio fijo garantizado todo el año</li>
+                <?php foreach ($caracteristicasAnual as $caracteristica): ?>
+                    <li><?= $caracteristica ?></li>
+                <?php endforeach; ?>
             </ul>
         </div>
 
@@ -559,8 +597,8 @@
         bcv = parseFloat(bcv)
 
         const PRECIOS = {
-            mensual: <?= $planRow['precio_mensual'] ?>,
-            anual: <?= $planRow['precio_anual'] ?>
+            mensual: <?= $pMensualVal ?>,
+            anual: <?= $pAnualVal ?>
         };
         let planActual = null;
 

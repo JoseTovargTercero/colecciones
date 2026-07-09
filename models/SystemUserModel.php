@@ -42,7 +42,7 @@ class SystemUserModel
     {
         $where = $incluirEliminados ? '1=1' : 'deleted_at IS NULL';
         // MODIFICADO: Añadido dispositivo_token
-        $sql = "SELECT user_id, nombre, email, telefono, nivel, estado, dispositivo_token, created_at, created_by, updated_at, updated_by
+        $sql = "SELECT user_id, nombre, email, telefono, nivel, estado, dispositivo_token, tipo, created_at, created_by, updated_at, updated_by
                 FROM {$this->table}
                 WHERE {$where}
                 ORDER BY created_at DESC, nombre ASC
@@ -62,7 +62,7 @@ class SystemUserModel
     public function obtenerPorId(string $userId): ?array
     {
         // MODIFICADO: Añadido dispositivo_token
-        $sql = "SELECT user_id, nombre, email, telefono, nivel, estado, dispositivo_token,
+        $sql = "SELECT user_id, nombre, email, telefono, nivel, estado, dispositivo_token, tipo,
                        created_at, created_by, updated_at, updated_by, deleted_at, deleted_by
                 FROM {$this->table}
                 WHERE user_id = ?";
@@ -99,9 +99,12 @@ class SystemUserModel
 
     public function crear(array $data): string
     {
-        if (empty($data['nombre']) || empty($data['email']) || empty($data['contrasena']) || !isset($data['nivel'])) {
-            throw new InvalidArgumentException('Faltan campos requeridos: nombre, email, contrasena, nivel.');
+        if (empty($data['nombre']) || empty($data['email']) || empty($data['contrasena'])) {
+            throw new InvalidArgumentException('Faltan campos requeridos: nombre, email, contrasena.');
         }
+
+        $tipoUsuario = $data['tipo_usuario'] ?? 'vendedor';
+        $nivel = ($tipoUsuario === 'gerente') ? 1 : 2;
 
         // Unicidad de email (excluye eliminados si así lo deseas)
         $existente = $this->obtenerPorEmail($data['email']);
@@ -116,19 +119,19 @@ class SystemUserModel
             $uuid       = UuidHelper::generateUUIDv4();
             $actorId    = $_SESSION['user_id'] ?? $uuid; // si no hay actor en sesión, deja el propio
             $hash       = $this->hashPassword($data['contrasena']);
-            $nivel      = (int)$data['nivel'] = 0;
             $estado     = isset($data['estado']) ? (int)$data['estado'] : 1;
 
             $telefono   = $data['telefono'] ?? null;
+            $tipo       = $tipoUsuario;
             $sql = "INSERT INTO {$this->table}
-                     (user_id, nombre, email, telefono, contrasena, nivel, estado, dispositivo_token,
+                     (user_id, nombre, email, telefono, contrasena, nivel, estado, dispositivo_token, tipo,
                       created_at, created_by, updated_at, updated_by, deleted_at, deleted_by)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, NULL, NULL, NULL, NULL)";
+                     VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, NULL, NULL, NULL, NULL)";
             $stmt = $this->db->prepare($sql);
             if (!$stmt) throw new mysqli_sql_exception("Error al preparar inserción: " . $this->db->error);
 
             $stmt->bind_param(
-                'sssssisss',
+                'sssssissss',
                 $uuid,
                 $data['nombre'],
                 $data['email'],
@@ -136,6 +139,7 @@ class SystemUserModel
                 $hash,
                 $nivel,
                 $estado,
+                $tipo,
                 $now,
                 $actorId
             );
@@ -276,7 +280,7 @@ class SystemUserModel
     public function loginBasico(string $email, string $password): array
     {
         // MODIFICADO: Añadido dispositivo_token
-        $sql = "SELECT user_id, nombre, email, contrasena, nivel, estado, dispositivo_token
+        $sql = "SELECT user_id, nombre, email, contrasena, nivel, estado, dispositivo_token, tipo
             FROM system_users
             WHERE email = ? AND deleted_at IS NULL
             LIMIT 1";
@@ -305,6 +309,7 @@ class SystemUserModel
             'nombre'  => $row['nombre'],
             'email'   => $row['email'],
             'nivel'   => (int)$row['nivel'],
+            'tipo'    => $row['tipo'] ?? null,
             'estado'  => (int)($row['estado'] ?? 1),
             'dispositivo_token' => $row['dispositivo_token'] ?? null,
         ];

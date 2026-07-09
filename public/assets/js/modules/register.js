@@ -10,10 +10,11 @@ document.addEventListener("DOMContentLoaded", function () {
       const nombre = this.nombre.value.trim();
       const email = this.email.value.trim();
       const telefono = this.telefono.value.trim();
+      const tipo_usuario = this.tipo_usuario.value;
       const contrasena = this.contrasena.value;
       const confirmacion = this.contrasena_confirm.value;
 
-      if (!nombre || !email || !contrasena) {
+      if (!nombre || !email || !contrasena || !tipo_usuario) {
         showErrorToast({ message: "Completa todos los campos obligatorios." });
         return;
       }
@@ -39,7 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
         email: email,
         contrasena: contrasena,
         telefono: telefono || null,
-        nivel: 2,
+        tipo_usuario: tipo_usuario,
       };
 
       $.ajax({

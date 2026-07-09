@@ -107,6 +107,7 @@
                 opacity: 0;
                 transform: translateY(32px) scale(0.97);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
@@ -156,8 +157,17 @@
         }
 
         @keyframes logoPulse {
-            0%, 100% { opacity: 0.6; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.08); }
+
+            0%,
+            100% {
+                opacity: 0.6;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.08);
+            }
         }
 
         .brand-logo-wrap img {
@@ -280,7 +290,7 @@
             box-shadow: 0 0 0 3.5px rgba(105, 108, 255, 0.14);
         }
 
-        .field-input:focus + .input-icon,
+        .field-input:focus+.input-icon,
         .input-wrap:focus-within .input-icon {
             color: var(--primary);
         }
@@ -369,7 +379,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .auth-link-wrap {
@@ -461,6 +473,19 @@
                     </div>
 
                     <div class="field-group">
+                        <label for="tipo_usuario" class="field-label">Tipo de usuario</label>
+                        <div class="input-wrap">
+                            <i class="mdi mdi-account-switch input-icon"></i>
+                            <select class="field-input" name="tipo_usuario" id="tipo_usuario" required style="padding-left:2.6rem;cursor:pointer;background:var(--input-bg);">
+                                <option value="">Selecciona un tipo</option>
+                                <option value="vendedor">Vendedor</option>
+                                <option value="gerente">Gerente</option>
+                            </select>
+                        </div>
+                        <div id="tipoDescripcion" style="font-size:0.75rem;color:var(--text-muted);margin-top:0.35rem;line-height:1.5;min-height:2.4rem;"></div>
+                    </div>
+
+                    <div class="field-group">
                         <label for="contrasena" class="field-label">Contrasena</label>
                         <div class="input-wrap">
                             <i class="mdi mdi-lock-outline input-icon"></i>
@@ -495,6 +520,24 @@
 
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var tipoSelect = document.getElementById('tipo_usuario');
+            var descDiv = document.getElementById('tipoDescripcion');
+            var descripciones = {
+                'vendedor': 'Trabajas con 5 o menos colecciones, el sistema se orienta a la venta unitaria de los productos, tus clientes son compradores finales.',
+                'gerente': 'Trabajas con mas de 5 colecciones (Max 80), el sistema se orienta a la venta de colecciones completas, tus clientes son otros vendedores.'
+            };
+
+            function actualizarDesc() {
+                var val = tipoSelect.value;
+                descDiv.textContent = val && descripciones[val] ? descripciones[val] : '';
+            }
+            tipoSelect.addEventListener('change', actualizarDesc);
+            actualizarDesc();
+        });
+    </script>
 
     <script src="<?php echo BASE_URL; ?>public/assets/js/vendor.min.js"></script>
 

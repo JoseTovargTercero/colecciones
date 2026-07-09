@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../models/SuscripcionModel.php';
+require_once __DIR__ . '/../../models/SystemUserModel.php';
 $model = new SuscripcionModel();
 $userId = $_SESSION['user_id'] ?? null;
 
@@ -71,6 +72,11 @@ if ($suscripcion) {
         $estado_icon  = 'mdi-close-circle-outline';
     }
 }
+
+$userModel  = new SystemUserModel();
+$userData   = $userId ? $userModel->obtenerPorId($userId) : null;
+$tipoUsuario = $userData ? ($userData['tipo'] ?? 'vendedor') : 'vendedor';
+$nombrePlan = $tipoUsuario === 'gerente' ? 'Plan de Gerentes' : 'Plan de Vendedores';
 ?>
 
 <style>
@@ -364,7 +370,7 @@ if ($suscripcion) {
                     
                     <div class="susc-header">
                         <div>
-                            <p class="susc-subtitle">Plan Actual</p>
+                            <p class="susc-subtitle">Plan Actual (<?= htmlspecialchars($nombrePlan) ?>)</p>
                             <h1 class="susc-title-gradient"><?= htmlspecialchars($suscripcion['tipo_pago'] ?? 'Desconocido') ?></h1>
                         </div>
                         <div class="susc-badge-status" style="color: <?= $estado_color ?>; border-color: <?= $estado_color ?>;">
