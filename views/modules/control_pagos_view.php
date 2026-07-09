@@ -66,7 +66,7 @@
                     </div>
 
                     <div class="table-responsive" id="tableWrapper" style="max-height:600px;overflow:auto">
-                        <table id="aTabla" class="table table-bordered table-striped table-sm mb-0" style="min-width:600px">
+                        <table id="aTabla" class="table table-bordered table-striped table-sm mb-0">
                             <thead>
                                 <tr id="aTablaHead"></tr>
                             </thead>
@@ -466,6 +466,144 @@
         line-height: 1.2;
     }
 
+    @media (max-width: 768px) {
+        #tableWrapper {
+            max-height: none !important;
+        }
+        #aTabla {
+            min-width: auto !important;
+            width: 100%;
+        }
+        #aTabla th:nth-child(1),
+        #aTabla td:nth-child(1) {
+            position: static !important;
+        }
+        #aTabla th:nth-child(2),
+        #aTabla td:nth-child(2) {
+            position: static !important;
+        }
+        #aTabla .cuota-header {
+            min-width: 44px !important;
+            font-size: .65rem !important;
+        }
+        .d-flex.gap-3.mb-3.align-items-end.flex-wrap {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+        .d-flex.gap-3.mb-3.align-items-end.flex-wrap > div {
+            width: 100%;
+        }
+        .d-flex.gap-3.mb-3.align-items-end.flex-wrap select,
+        .d-flex.gap-3.mb-3.align-items-end.flex-wrap input {
+            width: 100% !important;
+        }
+        #cpBtnGroup .d-flex {
+            flex-direction: column;
+            gap: 4px;
+        }
+        .legend {
+            flex-wrap: wrap;
+            gap: 6px !important;
+        }
+        .page-title-box {
+            flex-direction: column;
+            align-items: flex-start !important;
+        }
+        .page-title-box .nav-tabs {
+            width: 100%;
+        }
+        .page-title-box .nav-tabs .nav-link {
+            flex: 1;
+            text-align: center;
+            font-size: .8rem;
+        }
+        #tab-pagos > .card-body,
+        #tab-pagos .tab-pane .card-body:first-child {
+            padding: 8px !important;
+        }
+        /* Historial mobile fix - card layout for historial */
+        #cpHistorialBody .border.rounded-3.mb-3 > div:first-child {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 6px;
+            padding: 8px 12px !important;
+        }
+        #cpHistorialBody .border.rounded-3.mb-3 .badge.fs-6 {
+            font-size: .75rem !important;
+            padding: 4px 8px !important;
+        }
+        #cpHistorialBody .cp-historial-table {
+            font-size: .75rem !important;
+            width: 100%;
+        }
+        #cpHistorialBody .cp-historial-table thead {
+            display: none;
+        }
+        #cpHistorialBody .cp-historial-table tbody tr {
+            display: block;
+            padding: 4px 8px;
+            border-bottom: 1px solid #eee;
+            position: relative;
+        }
+        #cpHistorialBody .cp-historial-table tbody tr:last-child {
+            border-bottom: none;
+        }
+        #cpHistorialBody .cp-historial-table tbody td {
+            display: block;
+            padding: 2px 0 !important;
+            border: none !important;
+            white-space: normal !important;
+            text-align: left !important;
+        }
+        #cpHistorialBody .cp-historial-table tbody td:before {
+            content: attr(data-label);
+            font-weight: 600;
+            display: inline-block;
+            width: 90px;
+            color: #566a7f;
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .03rem;
+        }
+        #cpHistorialBody .cp-historial-table tbody td:first-child:before {
+            content: 'N°';
+        }
+        #cpHistorialBody .cp-historial-table tbody td:nth-child(2):before {
+            content: 'Fecha';
+        }
+        #cpHistorialBody .cp-historial-table tbody td:nth-child(3):before {
+            content: 'Monto';
+        }
+        #cpHistorialBody .cp-historial-table tbody td:nth-child(4):before {
+            content: 'Pagado';
+        }
+        #cpHistorialBody .cp-historial-table tbody td:nth-child(5):before {
+            content: 'Tiempo';
+        }
+        #cpHistorialBody .cp-historial-table tbody td:nth-child(6):before {
+            content: 'Comprobante';
+        }
+        #cpHistorialBody .table-responsive {
+            max-height: none !important;
+            overflow-x: visible;
+        }
+        #tab-historial .d-flex.gap-2.mb-3 {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+        #tab-historial .d-flex.gap-2.mb-3 input {
+            width: 100% !important;
+        }
+        /* Mobile historial header text fix */
+        #cpHistorialBody .cp-historial-header-text {
+            font-size: .85rem !important;
+            word-break: break-word;
+        }
+        #cpHistorialBody .small.text-muted {
+            word-break: break-word;
+        }
+    }
+
     .cuota-pagada {
         background: #d4edda !important;
     }
@@ -564,9 +702,13 @@
         const tbody = document.getElementById('aTablaBody');
         const colsExtra = _agrupado ? 2 : 3;
         const remIdx = remarcarIdx();
+        const isMobile = window.innerWidth <= 768;
 
-        let headerHtml = `<th style="position:sticky;left:0;z-index:3;background:#fff;min-width:200px">Vendedor</th>
-        <th style="position:sticky;left:200px;z-index:3;background:#fff;width:40px"></th>`;
+        const stickCls = isMobile ? '' : 'position:sticky;left:0;z-index:3;background:#fff';
+        const stickCls2 = isMobile ? '' : 'position:sticky;left:200px;z-index:3;background:#fff';
+        const vw = isMobile ? 'min-width:120px' : 'min-width:200px';
+        let headerHtml = `<th style="${stickCls};${vw}">Vendedor</th>
+        <th style="${stickCls2};width:40px"></th>`;
         if (!_agrupado) {
             headerHtml += `<th style="min-width:140px">Colección</th>`;
         }
@@ -590,9 +732,12 @@
             });
 
             const dots = `<button class="btn btn-sm btn-outline-secondary a-dd-btn" onclick="event.stopPropagation();abrirMenu(this,${r.vendedor_id})">⋮</button>`;
+            const isMobile = window.innerWidth <= 768;
+            const cellStick = isMobile ? '' : 'position:sticky;left:0;background:#fff';
+            const cellStick2 = isMobile ? '' : 'position:sticky;left:200px;background:#fff;';
 
-            let cells = `<td style="position:sticky;left:0;background:#fff"><strong>${r.vendedor_nombre}</strong><br><small class="text-muted">${r.vendedor_cedula || ''}</small></td>
-            <td style="position:sticky;left:200px;background:#fff;text-align:center">${dots}</td>`;
+            let cells = `<td style="${cellStick}"><strong>${r.vendedor_nombre}</strong><br><small class="text-muted">${r.vendedor_cedula || ''}</small></td>
+            <td style="${cellStick2};text-align:center">${dots}</td>`;
             if (!_agrupado) {
                 cells += `<td>${r.coleccion_nombre}<br><small class="text-muted">${r.coleccion_tipo}</small></td>`;
             }
@@ -1413,7 +1558,7 @@
                             '<i class="bx bx-package"></i>' +
                         '</div>' +
                         '<div>' +
-                            '<div class="fw-semibold" style="font-size:.95rem">' + (g.coleccion_nombre || 'Colección') + '</div>' +
+                            '<div class="fw-semibold cp-historial-header-text" style="font-size:.95rem">' + (g.coleccion_nombre || 'Colección') + '</div>' +
                             '<div class="small text-muted">' +
                                 '<i class="bx bx-user me-1"></i>' + (g.vendedor_nombre || '—') +
                                 (g.vendedor_cedula ? '<span class="ms-2">· ' + g.vendedor_cedula + '</span>' : '') +
@@ -1424,11 +1569,11 @@
                     _cpHistorialResumen(f.cuotas.map(function(x) { return x.cuota; })) +
                 '</div>' +
                 '<div class="p-0">' +
-                    '<table class="table table-hover align-middle mb-0" style="font-size:.85rem">' +
+                    '<table class="table table-hover align-middle mb-0 cp-historial-table" style="font-size:.85rem">' +
                         '<thead class="table-light small text-muted text-uppercase" style="letter-spacing:.03rem;font-size:.7rem">' +
                             '<tr>' +
                                 '<th style="width:60px" class="ps-3">#</th>' +
-                                '<th style="width:110px">Pagado</th>' +
+                                '<th style="width:110px">Fecha</th>' +
                                 '<th>Monto</th>' +
                                 '<th>Pagado</th>' +
                                 '<th style="width:60px" class="text-center">Tiempo</th>' +
@@ -1441,12 +1586,12 @@
                                 var comps = x.comps;
                                 var at = c.pagado_a_tiempo == 1 ? '<span class="badge bg-soft-success text-success" style="font-size:.65rem"><i class="bx bx-check fs-6"></i></span>' : '';
                                 return '<tr>' +
-                                    '<td class="fw-semibold ps-3">' + (c.numero_cuota || '—') + '</td>' +
-                                    '<td class="text-nowrap">' + (c.fecha_pago || '—') + '</td>' +
-                                    '<td class="fw-semibold">$' + parseFloat(c.monto_a_pagar || 0).toFixed(2) + '</td>' +
-                                    '<td class="fw-semibold text-success">$' + parseFloat(c.monto_pagado || 0).toFixed(2) + '</td>' +
-                                    '<td class="text-center">' + at + '</td>' +
-                                    '<td>' +
+                                    '<td class="fw-semibold ps-3" data-label="N°">' + (c.numero_cuota || '—') + '</td>' +
+                                    '<td class="text-nowrap" data-label="Fecha">' + (c.fecha_pago || '—') + '</td>' +
+                                    '<td class="fw-semibold" data-label="Monto">$' + parseFloat(c.monto_a_pagar || 0).toFixed(2) + '</td>' +
+                                    '<td class="fw-semibold text-success" data-label="Pagado">$' + parseFloat(c.monto_pagado || 0).toFixed(2) + '</td>' +
+                                    '<td class="text-center" data-label="Tiempo">' + at + '</td>' +
+                                    '<td data-label="Comprobante">' +
                                         '<div class="d-flex flex-wrap gap-1">' +
                                             (comps.length ? comps.map(_cpCompPill).join('') : '<span class="text-muted" style="font-size:.8rem">—</span>') +
                                         '</div>' +

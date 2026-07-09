@@ -68,9 +68,14 @@
                             <h5 class="mb-3 text-center">Selecciona el Vendedor</h5>
                             <div class="mb-3">
                                 <label for="aVendedor" class="form-label">Vendedor <span class="text-danger">*</span></label>
-                                <select class="form-select" id="aVendedor" required>
-                                    <option value="">Seleccione vendedor...</option>
-                                </select>
+                                <div class="d-flex gap-2">
+                                    <select class="form-select" id="aVendedor" required style="flex:1">
+                                        <option value="">Seleccione vendedor...</option>
+                                    </select>
+                                    <button class="btn btn-outline-primary" type="button" onclick="window.a.nuevoVendedor()" title="Nuevo vendedor">
+                                        <i class="bx bx-plus"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="text-center mt-4">
                                 <button class="btn btn-primary px-4" onclick="window.a.goStep(2)">
@@ -228,6 +233,43 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nuevo Vendedor (desde wizard) -->
+<div class="modal fade" id="aNuevoVendedorModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="aNuevoVendedorForm" onsubmit="window.a.saveNuevoVendedor(event)">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nuevo Vendedor</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <label for="aNVNombre" class="form-label">Nombre</label>
+                        <input class="form-control" id="aNVNombre" placeholder="Nombre completo" required>
+                    </div>
+                    <div class="mb-2">
+                        <label for="aNVCedula" class="form-label">Cédula</label>
+                        <input class="form-control" id="aNVCedula" placeholder="Cédula de identidad" required>
+                    </div>
+                    <div class="mb-2">
+                        <label for="aNVTelefono" class="form-label">Teléfono</label>
+                        <input class="form-control" id="aNVTelefono" placeholder="Teléfono">
+                    </div>
+                    <div class="mb-2">
+                        <label for="aNVNivel" class="form-label">Nivel</label>
+                        <select class="form-control" id="aNVNivel" required>
+                            <option value="COMPRADOR FINAL">COMPRADOR FINAL</option>
+                            <option value="VENDEDOR">VENDEDOR</option>
+                            <option value="DISTRIBUIDOR">DISTRIBUIDOR</option>
+                            <option value="GTE DISTRITO">GTE DISTRITO</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary">Guardar</button></div>
+            </form>
         </div>
     </div>
 </div>
@@ -453,6 +495,46 @@
             const el = document.getElementById('aCantidad');
             let v = parseInt(el.value) || 1;
             if (v > 1) el.value = v - 1;
+        },
+
+        nuevoVendedor() {
+            document.getElementById('aNuevoVendedorForm').reset();
+            new bootstrap.Modal(document.getElementById('aNuevoVendedorModal')).show();
+        },
+
+        async saveNuevoVendedor(e) {
+            e.preventDefault();
+            const body = {
+                nombre: document.getElementById('aNVNombre').value,
+                cedula: document.getElementById('aNVCedula').value,
+                telefono: document.getElementById('aNVTelefono').value,
+                nivel: document.getElementById('aNVNivel').value
+            };
+            try {
+                const res = await fetch(this.apiV, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const json = await res.json();
+                if (json.value) {
+                    bootstrap.Modal.getInstance(document.getElementById('aNuevoVendedorModal')).hide();
+                    // Recargar vendedores en el select
+                    const rv = await fetch(this.apiV).then(r => r.json());
+                    this._fillSelect('aVendedor', rv.data || [], v => ({
+                        v: v.id,
+                        l: `${v.nombre} — ${v.cedula}`
+                    }));
+                    // Seleccionar el nuevo
+                    const sel = document.getElementById('aVendedor');
+                    if (json.data?.id) sel.value = json.data.id;
+                    $('#aVendedor').select2('destroy').select2({ width: '100%', dropdownParent: $('#aWStep1') });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: json.message || 'Error al guardar' });
+                }
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Error al guardar el vendedor.' });
+            }
         },
 
         goStep(n) {

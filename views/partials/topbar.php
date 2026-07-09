@@ -305,7 +305,7 @@ if ($_susc && !empty($_susc['fecha_fin'])) {
         const downloadLi = document.getElementById('download-app-li');
         const downloadButton = document.getElementById('download-app-button');
 
-        if (isMobile) {
+      /*  if (isMobile) {
             downloadLi.style.display = 'list-item';
             downloadButton.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -328,7 +328,7 @@ if ($_susc && !empty($_susc['fecha_fin'])) {
                     }
                 });
             });
-        }
+        }*/
 
         // Search by cedula
         const searchInput = document.getElementById('tbSearchInput');
