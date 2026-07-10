@@ -66,7 +66,7 @@
                                     <select class="form-select" id="vaVendedor" required style="flex:1">
                                         <option value="">Seleccione vendedor...</option>
                                     </select>
-                                    <button class="btn btn-outline-primary" type="button" onclick="window.va.nuevoVendedor()" title="Nuevo vendedor">
+                                    <button style="text-wrap-mode: nowrap;" class="btn btn-outline-primary" type="button" onclick="window.va.nuevoVendedor()" title="Nuevo vendedor">
                                         <i class="bx bx-plus"></i> Nuevo
                                     </button>
                                 </div>
