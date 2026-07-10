@@ -137,7 +137,7 @@ class RecoveryPasswordController
         $stmt->close();
 
         // URL base de la app (ajusta APP_URL en tu entorno)
-        $appUrl = rtrim($_ENV['APP_URL'] ?? (defined('BASE_URL') ? BASE_URL : 'https://localhost'), '/');
+        $appUrl = rtrim($_ENV['APP_URL'] ?? (defined('BASE_URL') ? BASE_URL : 'https://iseller-tiendas.com/colecciones'), '/');
 
         // Ruta de recuperación: ajusta a la ruta real de tu vista de reset
         // por ejemplo: /reset-password, /recuperar-clave, etc.

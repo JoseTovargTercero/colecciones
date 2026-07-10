@@ -61,13 +61,13 @@
                         <div class="col-lg-6">
                             <h5 class="mb-3 text-center">Selecciona el Vendedor</h5>
                             <div class="mb-3">
-                                <label for="vaVendedor" class="form-label">Vendedor <span class="text-danger">*</span></label>
+                                <label for="vaVendedor" class="form-label">Cliente <span class="text-danger">*</span></label>
                                 <div class="d-flex gap-2">
                                     <select class="form-select" id="vaVendedor" required style="flex:1">
                                         <option value="">Seleccione vendedor...</option>
                                     </select>
                                     <button class="btn btn-outline-primary" type="button" onclick="window.va.nuevoVendedor()" title="Nuevo vendedor">
-                                        <i class="bx bx-plus"></i>
+                                        <i class="bx bx-plus"></i> Agregar nuevo
                                     </button>
                                 </div>
                             </div>
