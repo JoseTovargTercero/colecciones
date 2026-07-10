@@ -1,3 +1,6 @@
+<?php
+ob_start();
+?>
 <!DOCTYPE html>
 <html lang="en" data-topbar-color="dark">
 
@@ -46,3 +49,8 @@
 </body>
 
 </html>
+<?php
+$html = ob_get_clean();
+require_once APP_ROOT . 'helpers/vendedor_text_helper.php';
+echo aplicarReemplazosVendedor($html, 'main.php');
+?>

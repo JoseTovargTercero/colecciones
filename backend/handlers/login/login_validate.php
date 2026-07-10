@@ -24,7 +24,7 @@ if ($conexion->connect_error) {
 
 // Solo seleccionar campos necesarios
 $stmt = $conexion->prepare("
-    SELECT id, nombre, nivel, contrasena, email
+    SELECT id, nombre, nivel, contrasena, email, tipo
     FROM system_users 
     WHERE email = ? AND contrasena != '' AND estado = '1' 
     LIMIT 1
@@ -42,6 +42,7 @@ if ($row = $result->fetch_assoc()) {
 		$_SESSION['id'] = $row['id'];
 		$_SESSION['nombre'] = $row['nombre'];
 		$_SESSION['nivel'] = $row['nivel'];
+		$_SESSION['tipo'] = $row['nivel'] == 0 ? 'admin' : ($row['nivel'] == 1 ? 'gerente' : 'vendedor');
 		$_SESSION['email'] = $row['email'];
 
 

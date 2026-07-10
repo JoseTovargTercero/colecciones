@@ -89,27 +89,13 @@
                 <!-- Step 2: Colección + Temporada -->
                 <div class="wizard-step" id="aWStep2" style="display:none">
                     <div class="row justify-content-center">
-                        <div class="col-lg-6">
+                        <div class="col-lg-8">
                             <h5 class="mb-3 text-center">Colección y Temporada</h5>
                             <div class="mb-3">
                                 <label for="aEmpresa" class="form-label">Empresa <span class="text-danger">*</span></label>
                                 <select class="form-select" id="aEmpresa" required>
                                     <option value="">Seleccione empresa...</option>
                                 </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="aColeccion" class="form-label">Colección/Combo <span class="text-danger">*</span></label>
-                                <select class="form-select" id="aColeccion" required>
-                                    <option value="">Primero seleccione empresa...</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Cantidad de colecciones <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <button class="btn btn-outline-secondary" type="button" onclick="window.a.cantDec()">−</button>
-                                    <input type="number" class="form-control text-center" id="aCantidad" value="1" min="1" max="29" readonly>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="window.a.cantInc()">+</button>
-                                </div>
                             </div>
                             <div class="mb-3">
                                 <label for="aTemporada" class="form-label">Temporada <span class="text-danger">*</span></label>
@@ -120,6 +106,37 @@
                             <div class="mb-3">
                                 <label for="aFechaAsig" class="form-label">Fecha de Asignación <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control" id="aFechaAsig" required>
+                            </div>
+                            <hr>
+                            <h6>Agregar Colecciones</h6>
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-6">
+                                    <select class="form-select" id="aColeccionSel">
+                                        <option value="">Seleccione colección...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="number" class="form-control" id="aColCantidad" value="1" min="1" max="99" oninput="window.a.validarCantidad(this)">
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-success w-100" onclick="window.a.agregarColeccion()">
+                                        <i class="bx bx-plus"></i> Agregar
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="table-responsive mb-3">
+                                <table class="table table-sm table-bordered" id="aColTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Colección</th>
+                                            <th>Tipo</th>
+                                            <th>Precio</th>
+                                            <th>Cant.</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="aColBody"></tbody>
+                                </table>
                             </div>
                             <div class="text-center mt-4 d-flex justify-content-between">
                                 <button class="btn btn-secondary" onclick="window.a.goStep(1)">
@@ -261,7 +278,6 @@
                     <div class="mb-2">
                         <label for="aNVNivel" class="form-label">Nivel</label>
                         <select class="form-control" id="aNVNivel" required>
-                            <option value="COMPRADOR FINAL">COMPRADOR FINAL</option>
                             <option value="VENDEDOR">VENDEDOR</option>
                             <option value="DISTRIBUIDOR">DISTRIBUIDOR</option>
                             <option value="GTE DISTRITO">GTE DISTRITO</option>
@@ -304,6 +320,7 @@
         colecciones: [],
         temporadas: [],
         cuotasCalc: [],
+        coleccionesSel: [],
         currentEmpresa: '',
 
         resp: (r) => ({
@@ -430,8 +447,14 @@
             }));
 
             // Inicializar Select2 en los selects del wizard
-            $('#aVendedor').select2({ width: '100%', dropdownParent: $('#aWStep1') });
-            $('#aColeccion').select2({ width: '100%', dropdownParent: $('#aWStep2') });
+            $('#aVendedor').select2({
+                width: '100%',
+                dropdownParent: $('#aWStep1')
+            });
+            $('#aColeccion').select2({
+                width: '100%',
+                dropdownParent: $('#aWStep2')
+            });
 
             this.initTabs();
             this.load();
@@ -459,12 +482,15 @@
             this.diasRetraso = emp ? (parseInt(emp.dias_retraso_permitido) || 3) : 3;
 
             const cols = this.colecciones.filter(c => c.empresa_id == empId);
-            this._fillSelect('aColeccion', cols, c => ({
+            this._fillSelect('aColeccionSel', cols, c => ({
                 v: c.id,
                 l: `${c.nombre} (${c.tipo})`,
                 data: c
             }), 'Seleccione colección...');
-            $('#aColeccion').select2('destroy').select2({ width: '100%', dropdownParent: $('#aWStep2') });
+            $('#aColeccionSel').select2({
+                width: '100%',
+                dropdownParent: $('#aWStep2')
+            });
 
             const temps = this.temporadas.filter(t => t.empresa_id == empId);
             this._fillSelect('aTemporada', temps, t => ({
@@ -472,9 +498,74 @@
                 l: t.nombre
             }), 'Seleccione temporada...');
 
+            this.coleccionesSel = [];
+            this._renderColecciones();
+            document.getElementById('aEmpresa').disabled = false;
+            document.getElementById('aTemporada').disabled = false;
+            document.getElementById('aFechaAsig').disabled = false;
+
             document.getElementById('aResumenCard').style.display = 'none';
             document.getElementById('aResumenEmpty').style.display = 'block';
             this.cuotasCalc = [];
+        },
+
+        validarCantidad(el) {
+            let v = parseInt(el.value);
+            if (isNaN(v) || v < 1) el.value = 1;
+            if (v > 99) el.value = 99;
+        },
+
+        agregarColeccion() {
+            const sel = document.getElementById('aColeccionSel');
+            const opt = sel.selectedOptions[0];
+            if (!opt || !opt.value) {
+                Swal.fire({ icon: 'warning', title: 'Seleccione una colección' });
+                return;
+            }
+            const data = JSON.parse(opt.getAttribute('data-row') || '{}');
+            const exist = this.coleccionesSel.find(i => i.id === data.id);
+            if (exist) {
+                Swal.fire({ icon: 'info', title: 'Ya agregaste esta colección' });
+                return;
+            }
+            this.coleccionesSel.push({
+                id: data.id,
+                nombre: data.nombre,
+                tipo: data.tipo,
+                precio_venta_vendedor: parseFloat(data.precio_venta_vendedor),
+                cantidad: parseInt(document.getElementById('aColCantidad').value) || 1
+            });
+            document.getElementById('aEmpresa').disabled = true;
+            document.getElementById('aTemporada').disabled = true;
+            document.getElementById('aFechaAsig').disabled = true;
+            this._renderColecciones();
+        },
+
+        quitarColeccion(idx) {
+            this.coleccionesSel.splice(idx, 1);
+            this._renderColecciones();
+            if (!this.coleccionesSel.length) {
+                document.getElementById('aEmpresa').disabled = false;
+                document.getElementById('aTemporada').disabled = false;
+                document.getElementById('aFechaAsig').disabled = false;
+            }
+        },
+
+        _renderColecciones() {
+            const tbody = document.getElementById('aColBody');
+            let total = 0;
+            tbody.innerHTML = this.coleccionesSel.map((it, i) => {
+                const sub = it.precio_venta_vendedor * it.cantidad;
+                total += sub;
+                return `<tr>
+                    <td>${it.nombre}</td>
+                    <td>${it.tipo}</td>
+                    <td>$${it.precio_venta_vendedor.toFixed(2)}</td>
+                    <td>${it.cantidad}</td>
+                    <td><button class="btn btn-sm btn-danger" onclick="window.a.quitarColeccion(${i})"><i class="bx bx-x"></i></button></td>
+                </tr>`;
+            }).join('');
+            if (!this.coleccionesSel.length) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Sin colecciones agregadas</td></tr>';
         },
 
         onCalcChange() {
@@ -484,17 +575,6 @@
             document.getElementById('aResumenCard').style.display = 'none';
             document.getElementById('aResumenEmpty').style.display = 'block';
             this.cuotasCalc = [];
-        },
-
-        cantInc() {
-            const el = document.getElementById('aCantidad');
-            let v = parseInt(el.value) || 1;
-            if (v < 29) el.value = v + 1;
-        },
-        cantDec() {
-            const el = document.getElementById('aCantidad');
-            let v = parseInt(el.value) || 1;
-            if (v > 1) el.value = v - 1;
         },
 
         nuevoVendedor() {
@@ -513,7 +593,9 @@
             try {
                 const res = await fetch(this.apiV, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify(body)
                 });
                 const json = await res.json();
@@ -528,12 +610,23 @@
                     // Seleccionar el nuevo
                     const sel = document.getElementById('aVendedor');
                     if (json.data?.id) sel.value = json.data.id;
-                    $('#aVendedor').select2('destroy').select2({ width: '100%', dropdownParent: $('#aWStep1') });
+                    $('#aVendedor').select2('destroy').select2({
+                        width: '100%',
+                        dropdownParent: $('#aWStep1')
+                    });
                 } else {
-                    Swal.fire({ icon: 'error', title: 'Error', text: json.message || 'Error al guardar' });
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: json.message || 'Error al guardar'
+                    });
                 }
             } catch (e) {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Error al guardar el vendedor.' });
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al guardar el vendedor.'
+                });
             }
         },
 
@@ -547,15 +640,14 @@
 
         calcular() {
             const empId = document.getElementById('aEmpresa').value;
-            const colOpt = document.getElementById('aColeccion').selectedOptions[0];
             const calculo = document.getElementById('aCalculo').value;
             const fechaAsig = document.getElementById('aFechaAsig').value;
 
-            if (!empId || !colOpt?.value || !fechaAsig) {
+            if (!empId || !this.coleccionesSel.length || !fechaAsig) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Campos incompletos',
-                    text: 'Complete empresa, colección y fecha de asignación.'
+                    text: 'Complete empresa, agregue colecciones y fecha de asignación.'
                 });
                 return;
             }
@@ -570,10 +662,7 @@
                 return;
             }
 
-            const colData = JSON.parse(colOpt.getAttribute('data-row') || '{}');
-            const monto = parseFloat(colData.precio_venta_vendedor || 0);
-            const cantidad = parseInt(document.getElementById('aCantidad').value) || 1;
-            const montoTotal = monto * cantidad;
+            const montoTotal = this.coleccionesSel.reduce((s, c) => s + c.precio_venta_vendedor * (c.cantidad || 1), 0);
             const cuotas = Array.isArray(emp.cuotas) ? emp.cuotas : [];
             const n = parseInt(emp.cantidad_cuotas);
 
@@ -593,7 +682,7 @@
 
                 for (let i = 0; i < n; i++) {
                     const pct = parseFloat(cuotas[i] || (100 / n));
-                    const mt = (monto * pct / 100);
+                    const mt = (montoTotal * pct / 100);
                     const fecha = this._sumarIntervalo(fechaPrimera, intervalo, i);
                     this.cuotasCalc.push({
                         numero: i + 1,
@@ -605,7 +694,7 @@
             } else {
                 for (let i = 0; i < n; i++) {
                     const pct = parseFloat(cuotas[i] || (100 / n));
-                    const mt = (monto * pct / 100);
+                    const mt = (montoTotal * pct / 100);
                     this.cuotasCalc.push({
                         numero: i + 1,
                         porcentaje: pct,
@@ -719,10 +808,9 @@
 
             const payload = {
                 vendedor_id: document.getElementById('aVendedor').value,
-                coleccion_id: document.getElementById('aColeccion').value,
+                colecciones: this.coleccionesSel.map(c => ({ id: c.id, cantidad: c.cantidad })),
                 temporada_id: document.getElementById('aTemporada').value,
                 fecha_asignacion: document.getElementById('aFechaAsig').value,
-                cantidad: parseInt(document.getElementById('aCantidad').value) || 1,
                 cuotas: this.cuotasCalc
             };
 
@@ -905,18 +993,43 @@
             document.getElementById('aFormView').style.display = '';
             document.getElementById('aResumenCard').style.display = 'none';
             document.getElementById('aResumenEmpty').style.display = 'block';
+
+            document.getElementById('aVendedor').value = '';
+            document.getElementById('aEmpresa').value = '';
+            document.getElementById('aTemporada').value = '';
+            document.getElementById('aFechaAsig').value = '';
+            document.getElementById('aColeccionSel').value = '';
+            document.getElementById('aColCantidad').value = '1';
+            document.getElementById('aCalculo').value = 'automatico';
+            document.getElementById('aFechaPrimera').value = '';
+            document.getElementById('aIntervalo').value = 'quincenal';
+
             this.cuotasCalc = [];
-            // Re-init Select2 (pudo ser destruido al ocultar)
+            this.coleccionesSel = [];
+            this._renderColecciones();
+
+            document.getElementById('aEmpresa').disabled = false;
+            document.getElementById('aTemporada').disabled = false;
+            document.getElementById('aFechaAsig').disabled = false;
+
+            document.getElementById('aAutoFields').style.display = '';
+            document.getElementById('aIntervaloField').style.display = '';
+
+            this._fillSelect('aEmpresa', this.empresas, e => ({ v: e.id, l: e.nombre, data: e }));
+            this._fillSelect('aTemporada', [], () => ({}));
+            this._fillSelect('aColeccionSel', [], () => ({}));
+
             $('#aVendedor').select2({ width: '100%', dropdownParent: $('#aWStep1') });
+            $('#aColeccionSel').select2({ width: '100%', dropdownParent: $('#aWStep2') });
+
             this.goStep(1);
         },
 
         hideForm() {
             document.getElementById('aFormView').style.display = 'none';
             document.getElementById('aListView').style.display = '';
-            // Destroy Select2 al ocultar para evitar problemas de posicionamiento
-            try { $('#aVendedor').select2('destroy'); } catch(e) {}
-            try { $('#aColeccion').select2('destroy'); } catch(e) {}
+            try { $('#aVendedor').select2('destroy'); } catch (e) {}
+            try { $('#aColeccionSel').select2('destroy'); } catch (e) {}
         }
     };
 

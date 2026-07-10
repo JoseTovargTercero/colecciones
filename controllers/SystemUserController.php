@@ -168,6 +168,7 @@ class SystemUserController
             $_SESSION['user_id'] = $usuario['user_id'];
             $_SESSION['nombre'] = $usuario['nombre'] ?? ($auth['nombre'] ?? 'Usuario');
             $_SESSION['user_type'] = 'user';
+            $_SESSION['tipo'] = $tipo;
             $_SESSION['permisos'] = ['*'];
             $_SESSION['session_id'] = $sessionData['session_id'];
 
@@ -232,6 +233,7 @@ class SystemUserController
             $_SESSION['user_id'] = $usuario['user_id'];
             $_SESSION['nombre'] = $usuario['nombre'] ?? 'Usuario';
             $_SESSION['user_type'] = 'user';
+            $_SESSION['tipo'] = $usuario['tipo'] ?? 'admin';
             $_SESSION['permisos'] = ['*'];
 
 
@@ -390,6 +392,7 @@ class SystemUserController
             $_SESSION['user_id'] = $usuario['user_id'];
             $_SESSION['nombre'] = $usuario['nombre'] ?? 'Usuario';
             $_SESSION['user_type'] = 'user';
+            $_SESSION['tipo'] = $usuario['tipo'] ?? 'admin';
             $_SESSION['permisos'] = ['*'];
 
             // --- MODIFICACIÓN: Capturar respuesta array ---

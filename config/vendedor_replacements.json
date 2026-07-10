@@ -1,0 +1,7 @@
+{
+  "_description": "Reemplazos de texto para usuarios vendedor. Las claves son nombres de vista/partial, los valores son pares 'original' => 'reemplazo'. Los reemplazos se hacen con str_replace sobre el HTML final servido a vendedores.",
+  "main.php": {
+    "Buscar vendedor (cédula o nombre)...": "Buscar cliente",
+    "Top Vendedores": "Top Clientes"
+  }
+}

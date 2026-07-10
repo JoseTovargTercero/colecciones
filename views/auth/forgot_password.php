@@ -1,16 +1,11 @@
-<?php
-$tokenReset = $_GET['token_reset'] ?? null;
-$showReset = $tokenReset ? true : false;
-$pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
-?>
 <!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="utf-8" />
-    <title><?= $pageTitle ?> - Control de Deudas</title>
+    <title>Recuperar Contraseña - Control de Deudas</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Acceso exclusivo para usuarios registrados del sistema Control de Deudas.">
+    <meta name="description" content="Recupera tu contraseña de acceso al sistema.">
     <link rel="shortcut icon" href="<?php echo BASE_URL; ?>public/assets/images/favicon.ico">
 
     <!-- MDI Icons -->
@@ -61,7 +56,6 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
             background: #0d0e1c;
         }
 
-        /* ── Wrapper ── */
         .login-wrapper {
             min-height: 100vh;
             display: flex;
@@ -72,7 +66,6 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
             overflow: hidden;
         }
 
-        /* Animated gradient background */
         .login-wrapper::before {
             content: '';
             position: fixed;
@@ -84,7 +77,6 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
             z-index: 0;
         }
 
-        /* Overlay gradient on top of photo */
         .login-wrapper::after {
             content: '';
             position: fixed;
@@ -96,7 +88,6 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
             z-index: 1;
         }
 
-        /* ── Card ── */
         .login-card {
             position: relative;
             z-index: 10;
@@ -119,14 +110,12 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
                 opacity: 0;
                 transform: translateY(32px) scale(0.97);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
             }
         }
 
-        /* ── LEFT PANEL — Branding ── */
         .panel-brand {
             position: relative;
             background: rgba(255, 255, 255, 0.06);
@@ -140,7 +129,6 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
             overflow: hidden;
         }
 
-        /* Subtle radial glow on brand panel */
         .panel-brand::before {
             content: '';
             position: absolute;
@@ -171,17 +159,8 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
         }
 
         @keyframes logoPulse {
-
-            0%,
-            100% {
-                opacity: 0.6;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 1;
-                transform: scale(1.08);
-            }
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.08); }
         }
 
         .brand-logo-wrap img {
@@ -226,9 +205,6 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
             letter-spacing: 0.01em;
         }
 
-
-
-        /* ── RIGHT PANEL — Form ── */
         .panel-form {
             background: rgba(255, 255, 255, 1);
             display: flex;
@@ -252,7 +228,6 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
             line-height: 1.5;
         }
 
-        /* Field group */
         .field-group {
             margin-bottom: 1.25rem;
         }
@@ -313,30 +288,6 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
             color: var(--primary);
         }
 
-        /* Password toggle */
-        .btn-toggle-pass {
-            position: absolute;
-            right: 0.85rem;
-            background: none;
-            border: none;
-            padding: 0.25rem;
-            cursor: pointer;
-            color: #9ca3af;
-            font-size: 1.05rem;
-            line-height: 1;
-            transition: color 0.2s;
-            z-index: 2;
-        }
-
-        .btn-toggle-pass:hover {
-            color: var(--primary);
-        }
-
-        .field-input.has-toggle {
-            padding-right: 2.8rem;
-        }
-
-        /* Submit button */
         .btn-submit {
             width: 100%;
             padding: 0.85rem 1.5rem;
@@ -388,7 +339,6 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
             font-size: 1.15rem;
         }
 
-        /* Spinner inside button */
         .spinner-sm {
             width: 1rem;
             height: 1rem;
@@ -400,18 +350,15 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
 
-        /* Forgot password link */
-        .forgot-link-wrap {
+        .back-link-wrap {
             text-align: center;
             margin-top: 1.4rem;
         }
 
-        .forgot-link {
+        .back-link {
             font-size: 0.8125rem;
             color: var(--primary);
             text-decoration: none;
@@ -420,12 +367,33 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
             border-bottom: 1px solid transparent;
         }
 
-        .forgot-link:hover {
+        .back-link:hover {
             color: var(--primary-dark);
             border-bottom-color: var(--primary-dark);
         }
 
-        /* ── Responsive ── */
+        .success-icon {
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        .success-icon .mdi {
+            font-size: 3.5rem;
+            color: #22c55e;
+        }
+
+        .success-text {
+            font-size: 0.9375rem;
+            color: var(--text-dark);
+            margin-top: 0.5rem;
+            line-height: 1.6;
+        }
+
+        #formForgotPassword.hidden,
+        #successState.hidden {
+            display: none;
+        }
+
         @media (max-width: 680px) {
             .login-card {
                 grid-template-columns: 1fr;
@@ -447,8 +415,6 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
             .panel-form {
                 padding: 2.25rem 2rem;
             }
-
-
         }
     </style>
 </head>
@@ -456,8 +422,6 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
 <body>
     <div class="login-wrapper">
         <div class="login-card">
-
-            <!-- ── LEFT: Branding ── -->
             <div class="panel-brand">
                 <div class="brand-logo-wrap">
                     <img src="<?php echo BASE_URL; ?>public/assets/images/iso.png" alt="Logo Control de Deudas">
@@ -465,169 +429,64 @@ $pageTitle = $showReset ? 'Restablecer Contraseña' : 'Iniciar Sesión';
                 <div class="brand-name">Control de Deudas</div>
                 <div class="brand-sub">unidad de ventas</div>
                 <div class="brand-divider"></div>
-                <p class="brand-tagline">Gestiona y controla tus colecciones</p>
-
+                <p class="brand-tagline">Recupera el acceso a tu cuenta</p>
             </div>
 
-            <!-- ── RIGHT: Form ── -->
             <div class="panel-form">
-                <?php if ($showReset): ?>
+                <div id="formContainer">
+                    <h1 class="form-heading">Recuperar contraseña</h1>
+                    <p class="form-subheading">Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.</p>
 
-                <h1 class="form-heading">Restablecer contraseña</h1>
-                <p class="form-subheading">Ingresa tu nueva contraseña para recuperar el acceso.</p>
-
-                <form id="formResetPassword" method="POST" novalidate>
-                    <div class="field-group">
-                        <label for="new_password" class="field-label">Nueva contraseña</label>
-                        <div class="input-wrap">
-                            <i class="mdi mdi-lock-outline input-icon"></i>
-                            <input
-                                class="field-input has-toggle"
-                                type="password"
-                                name="new_password"
-                                id="new_password"
-                                required
-                                minlength="6"
-                                placeholder="Minimo 6 caracteres"
-                                autocomplete="new-password">
-                            <button
-                                type="button"
-                                class="btn-toggle-pass"
-                                data-target="new_password"
-                                aria-label="Mostrar u ocultar contraseña">
-                                <i class="mdi mdi-eye-outline"></i>
-                            </button>
+                    <form id="formForgotPassword" method="POST" novalidate>
+                        <div class="field-group">
+                            <label for="email" class="field-label">Correo electronico</label>
+                            <div class="input-wrap">
+                                <i class="mdi mdi-email-outline input-icon"></i>
+                                <input
+                                    class="field-input"
+                                    type="email"
+                                    name="email"
+                                    id="email"
+                                    required
+                                    placeholder="correo@ejemplo.com"
+                                    autocomplete="email">
+                            </div>
                         </div>
+
+                        <button class="btn-submit" type="submit" id="btn-send">
+                            <i class="mdi mdi-send"></i>
+                            <span>Enviar enlace de recuperacion</span>
+                        </button>
+                    </form>
+
+                    <div class="back-link-wrap">
+                        <a href="<?php echo BASE_URL; ?>login" class="back-link">
+                            <i class="mdi mdi-arrow-left"></i> Volver al inicio de sesion
+                        </a>
                     </div>
-
-                    <div class="field-group">
-                        <label for="confirm_password" class="field-label">Confirmar contraseña</label>
-                        <div class="input-wrap">
-                            <i class="mdi mdi-lock-check-outline input-icon"></i>
-                            <input
-                                class="field-input has-toggle"
-                                type="password"
-                                name="confirm_password"
-                                id="confirm_password"
-                                required
-                                minlength="6"
-                                placeholder="Repite la contraseña"
-                                autocomplete="new-password">
-                            <button
-                                type="button"
-                                class="btn-toggle-pass"
-                                data-target="confirm_password"
-                                aria-label="Mostrar u ocultar contraseña">
-                                <i class="mdi mdi-eye-outline"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <button class="btn-submit" type="submit" id="btn-reset">
-                        <i class="mdi mdi-lock-reset"></i>
-                        <span>Restablecer contraseña</span>
-                    </button>
-                </form>
-
-                <div class="forgot-link-wrap">
-                    <a href="<?php echo BASE_URL; ?>login" class="forgot-link">
-                        <i class="mdi mdi-arrow-left"></i> Volver al inicio de sesión
-                    </a>
                 </div>
 
-                <?php else: ?>
-
-                <h1 class="form-heading">Ingresar</h1>
-                <p class="form-subheading">Ingresa tus credenciales para continuar.</p>
-
-                <form id="formLogin" method="POST" novalidate>
-
-                    <div class="field-group">
-                        <label for="email" class="field-label">Correo electronico</label>
-                        <div class="input-wrap">
-                            <i class="mdi mdi-email-outline input-icon"></i>
-                            <input
-                                class="field-input"
-                                type="email"
-                                name="email"
-                                id="email"
-                                required
-                                placeholder="correo@ejemplo.com"
-                                autocomplete="email">
-                        </div>
+                <div id="successState" class="hidden">
+                    <div class="success-icon">
+                        <i class="mdi mdi-email-check-outline"></i>
                     </div>
-
-                    <div class="field-group">
-                        <label for="contrasena" class="field-label">Contrasena</label>
-                        <div class="input-wrap">
-                            <i class="mdi mdi-lock-outline input-icon"></i>
-                            <input
-                                class="field-input has-toggle"
-                                type="password"
-                                name="contrasena"
-                                id="contrasena"
-                                required
-                                placeholder="••••••••"
-                                autocomplete="current-password">
-                            <button
-                                type="button"
-                                class="btn-toggle-pass"
-                                id="togglePassword"
-                                aria-label="Mostrar u ocultar contrasena">
-                                <i class="mdi mdi-eye-outline" id="togglePasswordIcon"></i>
-                            </button>
-                        </div>
+                    <h1 class="form-heading" style="text-align:center;">Correo enviado</h1>
+                    <p class="success-text">
+                        Hemos enviado un enlace de recuperacion a tu correo electronico.
+                        Revisa tu bandeja de entrada y sigue las instrucciones.
+                    </p>
+                    <div class="back-link-wrap" style="margin-top:2rem;">
+                        <a href="<?php echo BASE_URL; ?>login" class="back-link">
+                            <i class="mdi mdi-arrow-left"></i> Volver al inicio de sesion
+                        </a>
                     </div>
-
-                    <button class="btn-submit" type="submit" id="btn-login">
-                        <i class="mdi mdi-login"></i>
-                        <span>Ingresar</span>
-                    </button>
-                </form>
-
-                <div class="forgot-link-wrap">
-                    <a href="<?php echo BASE_URL; ?>registro" class="forgot-link">¿No tienes cuenta? Crear cuenta</a>
                 </div>
-                <div class="forgot-link-wrap" style="margin-top: 0.5rem;">
-                    <a href="<?php echo BASE_URL; ?>olvide-contrasena" class="forgot-link">¿Olvidaste tu contrasena?</a>
-                </div>
-
-                <?php endif; ?>
             </div>
-
         </div>
     </div>
 
-    <!-- jQuery (needed by login.js AJAX) -->
     <script src="<?php echo BASE_URL; ?>public/assets/js/vendor.min.js"></script>
-
-    <script>
-        // Toggle password visibility for all toggle buttons
-        (function() {
-            document.querySelectorAll('.btn-toggle-pass').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    const targetId = this.dataset.target;
-                    const input = targetId
-                        ? document.getElementById(targetId)
-                        : document.getElementById('contrasena');
-                    const icon = this.querySelector('.mdi');
-                    if (input && icon) {
-                        const isPass = input.type === 'password';
-                        input.type = isPass ? 'text' : 'password';
-                        icon.className = isPass
-                            ? 'mdi mdi-eye-off-outline'
-                            : 'mdi mdi-eye-outline';
-                    }
-                });
-            });
-        }());
-    </script>
-
-    <?php if ($showReset): ?>
-    <script type="module" src="<?php echo BASE_URL; ?>public/assets/js/modules/reset_password.js"></script>
-    <?php else: ?>
-    <script type="module" src="<?php echo BASE_URL; ?>public/assets/js/modules/login.js"></script>
-    <?php endif; ?>
+    <script type="module" src="<?php echo BASE_URL; ?>public/assets/js/modules/forgot_password.js"></script>
 </body>
 
 </html>

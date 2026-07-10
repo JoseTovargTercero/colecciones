@@ -44,8 +44,10 @@ class AsignacionModel
     public function crear(array $d): string
     {
         $vendedor_id   = isset($d['vendedor_id']) ? (int)$d['vendedor_id'] : 0;
-        $coleccion_id  = $d['coleccion_id'] ?? '';
+        $colecciones   = $d['colecciones'] ?? [];
         $temporada_id  = $d['temporada_id'] ?? '';
+
+        if (!$colecciones || !is_array($colecciones)) throw new Exception('Debe seleccionar al menos una colección');
 
         $stmt = $this->db->prepare("SELECT id FROM vendedores WHERE id=? AND usuario_id=?");
         $stmt->bind_param('is', $vendedor_id, $this->user);
@@ -53,42 +55,22 @@ class AsignacionModel
         if (!$stmt->get_result()->fetch_assoc()) throw new Exception('Vendedor no encontrado');
         $stmt->close();
 
-        $stmt = $this->db->prepare(
-            "SELECT cc.precio_venta_vendedor, cc.ganancia_vendedor, cc.precio_base
-             FROM colecciones_combos cc
-             INNER JOIN empresas e ON cc.empresa_id = e.id
-             WHERE cc.id = ? AND e.usuario_id = ?");
-        $stmt->bind_param('ss', $coleccion_id, $this->user);
-        $stmt->execute();
-        $r = $stmt->get_result();
-
-        $row = $r->fetch_assoc();
-        $stmt->close();
-
-        if ($row) {
-            $precio_venta_vendedor = $row['precio_venta_vendedor'];
-            $ganancia_vendedor = $row['ganancia_vendedor'];
-            $ganancia_gerente = (float)$row['precio_venta_vendedor'] - (float)$row['precio_base'];
-        } else {
-            throw new Exception('No existe la coleccion');
-        }
-
         $fecha_asig    = trim($d['fecha_asignacion'] ?? '');
         $cuotas        = $d['cuotas'] ?? [];
-        $cantidad      = isset($d['cantidad']) ? max(1, (int)$d['cantidad']) : 1;
 
-        if (!$vendedor_id || !$coleccion_id || !$temporada_id || !$fecha_asig)
+        if (!$vendedor_id || !$temporada_id || !$fecha_asig)
             throw new Exception('Faltan datos obligatorios o son inválidos');
         if (empty($cuotas)) throw new Exception('Debe definir al menos una cuota');
 
         $this->db->begin_transaction();
         try {
+            $last_id = null;
+
             $stmt = $this->db->prepare(
                 "INSERT INTO asignaciones_colecciones
                  (vendedor_id, coleccion_combo_id, temporada_id, estado, aplica_premio_especial, fecha_asignacion, usuario_id, costo, ganancia_vendedor, ganancia_gerente)
                  VALUES (?, ?, ?, 'activa', 0, ?, ?, ?, ?, ?)"
             );
-            $stmt->bind_param('issssddd', $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $this->user, $precio_venta_vendedor, $ganancia_vendedor, $ganancia_gerente);
 
             $stmt2 = $this->db->prepare(
                 "INSERT INTO cuotas_coleccion
@@ -96,22 +78,45 @@ class AsignacionModel
                  VALUES (?, ?, ?, ?, ?, ?, 'pendiente', ?)"
             );
 
-            $last_id = null;
-            for ($j = 0; $j < $cantidad; $j++) {
-                if (!$stmt->execute()) {
-                    throw new Exception("Error al insertar asignación: " . $stmt->error);
-                }
-                $asignacion_id = $this->db->insert_id;
-                $last_id = $asignacion_id;
+            foreach ($colecciones as $item) {
+                $coleccion_id = $item['id'] ?? '';
+                $cantidad = isset($item['cantidad']) ? max(1, (int)$item['cantidad']) : 1;
+                if (!$coleccion_id) continue;
 
-                foreach ($cuotas as $c) {
-                    $num           = (int)$c['numero'];
-                    $porcentaje    = (float)$c['porcentaje'];
-                    $monto         = (float)$c['monto'];
-                    $fecha_pago    = $c['fecha_pago'];
+                $cs = $this->db->prepare(
+                    "SELECT cc.precio_venta_vendedor, cc.ganancia_vendedor, cc.precio_base
+                     FROM colecciones_combos cc
+                     INNER JOIN empresas e ON cc.empresa_id = e.id
+                     WHERE cc.id = ? AND e.usuario_id = ?");
+                $cs->bind_param('ss', $coleccion_id, $this->user);
+                $cs->execute();
+                $r = $cs->get_result();
+                $row = $r->fetch_assoc();
+                $cs->close();
 
-                    $stmt2->bind_param('iidddss', $asignacion_id, $num, $porcentaje, $monto, $monto, $fecha_pago, $this->user);
-                    $stmt2->execute();
+                if (!$row) throw new Exception('No existe la colección ' . $coleccion_id);
+
+                $precio_venta_vendedor = (float)$row['precio_venta_vendedor'];
+                $ganancia_vendedor = $row['ganancia_vendedor'];
+                $ganancia_gerente = (float)$row['precio_venta_vendedor'] - (float)$row['precio_base'];
+
+                for ($j = 0; $j < $cantidad; $j++) {
+                    $stmt->bind_param('issssddd', $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $this->user, $precio_venta_vendedor, $ganancia_vendedor, $ganancia_gerente);
+                    if (!$stmt->execute()) {
+                        throw new Exception("Error al insertar asignación: " . $stmt->error);
+                    }
+                    $asignacion_id = $this->db->insert_id;
+                    $last_id = $asignacion_id;
+
+                    foreach ($cuotas as $c) {
+                        $num           = (int)$c['numero'];
+                        $porcentaje    = (float)$c['porcentaje'];
+                        $monto         = $precio_venta_vendedor * $porcentaje / 100;
+                        $fecha_pago    = $c['fecha_pago'];
+
+                        $stmt2->bind_param('iidddss', $asignacion_id, $num, $porcentaje, $monto, $monto, $fecha_pago, $this->user);
+                        $stmt2->execute();
+                    }
                 }
             }
             $stmt->close();

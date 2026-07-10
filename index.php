@@ -31,6 +31,10 @@ require_once __DIR__ . '/controllers/DashboardController.php';
 require_once __DIR__ . '/controllers/CronController.php';
 require_once __DIR__ . '/controllers/TutorialController.php';
 require_once __DIR__ . '/controllers/SuscripcionController.php';
+require_once __DIR__ . '/controllers/ArticuloController.php';
+require_once __DIR__ . '/controllers/ArticuloAsignacionController.php';
+require_once __DIR__ . '/controllers/ControlPagosArticuloController.php';
+require_once __DIR__ . '/controllers/CargaPagosArticuloController.php';
 
 
 use App\Core\ViewRenderer;
@@ -72,6 +76,8 @@ $router->group(['middleware' => SessionRedirectMiddleware::class], function ($ro
     $router->get('/', ['vista' => 'auth/login', 'vistaData' => ['titulo' => 'Iniciar Sesión', 'layout' => false]]);
     $router->get('', ['vista' => 'auth/login', 'vistaData' => ['titulo' => 'Iniciar Sesión', 'layout' => false]]);
 });
+// Ruta pública de recuperación de contraseña (sin middleware de sesión)
+$router->get('/olvide-contrasena', ['vista' => 'auth/forgot_password', 'vistaData' => ['titulo' => 'Recuperar Contraseña', 'layout' => false]]);
 /*
 // Rutas protegidas (requieren autenticación)
 $router->group(['middleware' => AuthMiddleware::class], function ($router) {
@@ -85,12 +91,15 @@ $router->group(['middleware' => LoginSuscripcionMiddleware::class], function ($r
     $router->get('/empresas',            ['vista' => 'modules/empresas_view',            'vistaData' => ['titulo' => 'Empresas']]);
     $router->get('/temporadas',          ['vista' => 'modules/temporadas_view',          'vistaData' => ['titulo' => 'Temporadas']]);
     $router->get('/colecciones',         ['vista' => 'modules/colecciones_view',         'vistaData' => ['titulo' => 'Colecciones']]);
+    $router->get('/articulos',           ['vista' => 'modules/articulos_view',           'vistaData' => ['titulo' => 'Artículos']]);
     $router->get('/premios',             ['vista' => 'modules/premios_view',             'vistaData' => ['titulo' => 'Premios']]);
     $router->get('/vendedores',          ['vista' => 'modules/vendedores_view',          'vistaData' => ['titulo' => 'Vendedores']]);
+    $router->get('/vendedore_articulo', ['vista' => 'modules/vendedore_articulo_view', 'vistaData' => ['titulo' => 'Asignaciones de Artículos']]);
     $router->get('/asignaciones',        ['vista' => 'modules/asignaciones_view',        'vistaData' => ['titulo' => 'Asignaciones']]);
     $router->get('/control_pagos',       ['vista' => 'modules/control_pagos_view',       'vistaData' => ['titulo' => 'Control de pagos']]);
     $router->get('/preferencias-premios',['vista' => 'modules/preferencias_premios_view','vistaData' => ['titulo' => 'Preferencias de Premios']]);
     $router->get('/dashboard',           ['vista' => 'modules/dashboard_view',           'vistaData' => ['titulo' => 'Dashboard']]);
+    $router->get('/dashboard-vendedor', ['vista' => 'modules/dashboard_vendedor_view', 'vistaData' => ['titulo' => 'Mi Dashboard']]);
     $router->get('/mi-suscripcion',      ['vista' => 'modules/mi_suscripcion_view',      'vistaData' => ['titulo' => 'Mi Suscripción']]);
 });
 
@@ -138,6 +147,9 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/system_users/login', ['controlador' => SystemUserController::class, 'accion' => 'login']);
     // Logout
     $router->get('/logout', ['controlador' => AuthController::class, 'accion' => 'logout']);
+    // Recuperación de contraseña
+    $router->post('/recovery/verify-email', ['controlador' => RecoveryPasswordController::class, 'accion' => 'verifyEmail']);
+    $router->post('/recovery/update-password', ['controlador' => RecoveryPasswordController::class, 'accion' => 'updatePassword']);
 
     // endpoints de empresas
     $router->get('/empresas',         ['controlador' => EmpresaController::class, 'accion' => 'listar']);
@@ -157,6 +169,12 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/colecciones', ['controlador' => ColeccionController::class, 'accion' => 'crear']);
     $router->post('/colecciones/{id}', ['controlador' => ColeccionController::class, 'accion' => 'actualizar']);
     $router->delete('/colecciones/{id}', ['controlador' => ColeccionController::class, 'accion' => 'eliminar']);
+
+    // endpoints de articulos
+    $router->get('/articulos', ['controlador' => ArticuloController::class, 'accion' => 'listar']);
+    $router->post('/articulos', ['controlador' => ArticuloController::class, 'accion' => 'crear']);
+    $router->post('/articulos/{id}', ['controlador' => ArticuloController::class, 'accion' => 'actualizar']);
+    $router->delete('/articulos/{id}', ['controlador' => ArticuloController::class, 'accion' => 'eliminar']);
 
     // endpoints de premios
     $router->get('/premios', ['controlador' => PremioController::class, 'accion' => 'listar']);
@@ -178,6 +196,13 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->delete('/asignaciones/{id}', ['controlador' => AsignacionController::class, 'accion' => 'eliminar']);
     $router->get('/asignaciones/{id}/cuotas', ['controlador' => AsignacionController::class, 'accion' => 'cuotas']);
 
+    // endpoints de asignaciones de articulos
+    $router->get('/asignaciones-articulos', ['controlador' => ArticuloAsignacionController::class, 'accion' => 'listar']);
+    $router->post('/asignaciones-articulos', ['controlador' => ArticuloAsignacionController::class, 'accion' => 'crear']);
+    $router->delete('/asignaciones-articulos/{id}', ['controlador' => ArticuloAsignacionController::class, 'accion' => 'eliminar']);
+    $router->get('/asignaciones-articulos/{id}/cuotas', ['controlador' => ArticuloAsignacionController::class, 'accion' => 'cuotas']);
+    $router->get('/asignaciones-articulos/{id}/detalle', ['controlador' => ArticuloAsignacionController::class, 'accion' => 'detalle']);
+
     // control-pagos
     $router->get('/control-pagos', ['controlador' => ControlPagosController::class, 'accion' => 'listar']);
     $router->get('/control-pagos/historial', ['controlador' => ControlPagosController::class, 'accion' => 'historial']);
@@ -186,6 +211,13 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/cargar-pago', ['controlador' => CargaPagosController::class, 'accion' => 'procesar']);
     $router->get('/cargar-pago/cuotas', ['controlador' => CargaPagosController::class, 'accion' => 'cuotas']);
     $router->get('/cargar-pago/deuda', ['controlador' => CargaPagosController::class, 'accion' => 'deuda']);
+
+    // control-pagos-articulos
+    $router->get('/control-pagos-articulos', ['controlador' => ControlPagosArticuloController::class, 'accion' => 'listar']);
+    $router->get('/control-pagos-articulos/historial', ['controlador' => ControlPagosArticuloController::class, 'accion' => 'historial']);
+    $router->post('/cargar-pago-articulo', ['controlador' => CargaPagosArticuloController::class, 'accion' => 'procesar']);
+    $router->get('/cargar-pago-articulo/cuotas', ['controlador' => CargaPagosArticuloController::class, 'accion' => 'cuotas']);
+    $router->get('/cargar-pago-articulo/deuda', ['controlador' => CargaPagosArticuloController::class, 'accion' => 'deuda']);
 
     // preferencias-premios
     $router->get('/preferencias-premios', ['controlador' => PreferenciasPremiosController::class, 'accion' => 'listar']);
@@ -198,6 +230,7 @@ $router->group(['prefix' => '/api'], function ($router) {
 
     // dashboard
     $router->get('/dashboard/kpis', ['controlador' => DashboardController::class, 'accion' => 'kpis']);
+    $router->get('/dashboard/kpis-vendedor', ['controlador' => DashboardController::class, 'accion' => 'kpisVendedor']);
 
     // endpoints de alertas
     $router->get('/alertas', ['controlador' => AlertaController::class, 'accion' => 'listar']);

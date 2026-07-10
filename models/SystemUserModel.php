@@ -80,7 +80,7 @@ class SystemUserModel
     public function obtenerPorEmail(string $email): ?array
     {
         // MODIFICADO: Añadido dispositivo_token
-        $sql = "SELECT user_id, nombre, email, telefono, contrasena, nivel, estado, dispositivo_token, deleted_at
+        $sql = "SELECT user_id, nombre, email, telefono, contrasena, nivel, estado, dispositivo_token, tipo, deleted_at
                 FROM {$this->table}
                 WHERE email = ?
                 LIMIT 1";

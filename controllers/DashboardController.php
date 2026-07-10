@@ -29,4 +29,21 @@ class DashboardController
             $this->res(false, 'Error: ' . $e->getMessage(), null, 500);
         }
     }
+
+    public function kpisVendedor()
+    {
+        $empresa_id   = isset($_GET['empresa_id'])   ? (int)$_GET['empresa_id']   : null;
+        $temporada_id = isset($_GET['temporada_id']) ? trim($_GET['temporada_id']) : null;
+        try {
+            $data = $this->m->kpisVendedor($empresa_id, $temporada_id);
+            $data['_debug'] = [
+                'session_user_id' => $_SESSION['user_id'] ?? '',
+                'session_nombre'  => $_SESSION['nombre'] ?? '',
+                'session_tipo'    => $_SESSION['tipo'] ?? '',
+            ];
+            $this->res(true, 'OK', $data);
+        } catch (Throwable $e) {
+            $this->res(false, 'Error: ' . $e->getMessage(), null, 500);
+        }
+    }
 }

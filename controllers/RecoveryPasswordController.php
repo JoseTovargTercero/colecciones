@@ -13,6 +13,31 @@ class RecoveryPasswordController
     {
         $this->db    = Database::getInstance();
         $this->model = new SystemUserModel();
+        $this->ensurePasswordResetsTable();
+    }
+
+    /**
+     * Lee input desde JSON o $_POST
+     */
+    private function getInput(): array
+    {
+        $json = json_decode(file_get_contents('php://input'), true);
+        return $json ?? $_POST;
+    }
+
+    /**
+     * Crea la tabla password_resets si no existe
+     */
+    private function ensurePasswordResetsTable(): void
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS password_resets (
+            email VARCHAR(255) NOT NULL,
+            token VARCHAR(64) NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (email),
+            INDEX idx_token (token)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+        $this->db->query($sql);
     }
 
     private function jsonResponse($value, string $message = '', $data = null, int $status = 200): void
@@ -33,7 +58,8 @@ class RecoveryPasswordController
      * ====================================================== */
     public function verifyEmail(): void
     {
-        $email = trim($_POST['email'] ?? '');
+        $input = $this->getInput();
+        $email = trim($input['email'] ?? '');
 
         if ($email === '') {
             $this->jsonResponse(false, 'El parámetro email es obligatorio.', null, 400);
@@ -171,9 +197,10 @@ class RecoveryPasswordController
      * ====================================================== */
     public function updatePassword(): void
     {
-        $newPassword = trim($_POST['new_password'] ?? '');
-        $userId      = $_POST['user_id'] ?? ($_POST['userId'] ?? null);
-        $token       = $_POST['token'] ?? null;
+        $input       = $this->getInput();
+        $newPassword = trim($input['new_password'] ?? '');
+        $userId      = $input['user_id'] ?? ($input['userId'] ?? null);
+        $token       = $input['token'] ?? null;
 
         if ($newPassword === '') {
             $this->jsonResponse(false, 'La nueva contraseña es obligatoria.', null, 400);

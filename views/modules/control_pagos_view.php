@@ -25,6 +25,31 @@
             <!-- Filters -->
             <div class="d-flex gap-3 mb-3 align-items-end flex-wrap">
                 <div>
+                    <label for="tipoRecurso" class="form-label">Tipo</label>
+
+                    <?php $esVendedor = (isset($_SESSION['nivel']) && $_SESSION['nivel'] == 2); ?>
+                    <select id="tipoRecurso" class="form-select" style="width:140px" <?= $esVendedor ? 'disabled' : '' ?>>
+
+                        <?php
+                        $userId = $_SESSION['user_id'] ?? null;
+                        $display = 'd-none';
+                        if ($userId) {
+                            $userModel = new SystemUserModel();
+                            $user = $userModel->obtenerPorId($userId);
+                            if ($user && ($user['tipo'] ?? '') === 'gerente') {
+                                $display = '';
+                                echo ' <option value="colecciones">Colecciones</option>';
+                            }
+                        }
+                        ?>
+
+                        <option value="articulos">Artículos</option>
+                    </select>
+                    <?php if ($esVendedor): ?>
+                        <input type="hidden" id="tipoRecursoHidden" value="articulos">
+                    <?php endif; ?>
+                </div>
+                <div>
                     <label for="empresa" class="form-label">Empresa</label>
                     <select id="empresa" class="form-select"></select>
                 </div>
@@ -116,8 +141,8 @@
                                 <label for="cpTipoPago" class="form-label">Tipo de pago</label>
                                 <select class="form-select" id="cpTipoPago" name="tipo_pago" required>
                                     <option value="">Seleccione...</option>
-                                    <option value="total">Liquidación Total de la deuda</option>
-                                    <!-- <option value="cuota_exacta">Pago de cuota exacta</option> -->
+                                    <!--<option value="total">Liquidación Total de la deuda</option>
+                                    <option value="cuota_exacta">Pago de cuota exacta</option> -->
                                     <option value="abono">Abono</option>
                                 </select>
                             </div>
@@ -266,7 +291,7 @@
                         </table>
                     </div>
                     <!-- Comprobantes -->
-                    <div class="mt-3" id="cpDeudaCompSection">
+                    <div class="mt-3 d-none" id="cpDeudaCompSection">
                         <div class="d-flex align-items-center gap-2 mb-2" data-bs-toggle="collapse" data-bs-target="#cpDeudaCompList" aria-expanded="false" style="cursor:pointer">
                             <h6 class="fw-semibold mb-0"><i class="bx bx-receipt me-1 text-muted"></i>Comprobantes</h6>
                             <span class="badge bg-primary rounded-pill" id="cpDeudaCompCount">0</span>
@@ -292,7 +317,7 @@
                         </div>
                     </div>
                     <!-- Premios -->
-                    <div class="mt-3" id="cpDeudaPremiosSection">
+                    <div class="mt-3 <?php echo $display ?>" id="cpDeudaPremiosSection">
                         <div class="d-flex align-items-center gap-2 mb-2" data-bs-toggle="collapse" data-bs-target="#cpDeudaPremiosList" aria-expanded="false" style="cursor:pointer">
                             <h6 class="fw-semibold mb-0"><i class="bx bx-gift me-1 text-muted"></i>Premios Solicitados</h6>
                             <span class="badge bg-warning text-dark rounded-pill" id="cpDeudaPremiosCount">0</span>
@@ -329,7 +354,7 @@
     <hr class="dropdown-divider my-1">
     <a class="dropdown-item py-2" href="#" id="cpDropDeuda"><i class="bx bx-bar-chart-alt-2 me-2 text-primary"></i>Estatus de deuda</a>
     <hr class="dropdown-divider my-1">
-    <a class="dropdown-item py-2" href="#" id="cpDropPremio"><i class="bx bx-gift me-2" style="color: #a594f9"></i>Solicitud de premio</a>
+    <a class="dropdown-item py-2" href="#" id="cpDropPremio" style="display:none"><i class="bx bx-gift me-2" style="color: #a594f9"></i>Solicitud de premio</a>
 </div>
 
 <!-- Modal Solicitud de Premio -->
@@ -470,84 +495,104 @@
         #tableWrapper {
             max-height: none !important;
         }
+
         #aTabla {
             min-width: auto !important;
             width: 100%;
         }
+
         #aTabla th:nth-child(1),
         #aTabla td:nth-child(1) {
             position: static !important;
         }
+
         #aTabla th:nth-child(2),
         #aTabla td:nth-child(2) {
             position: static !important;
         }
+
         #aTabla .cuota-header {
             min-width: 44px !important;
             font-size: .65rem !important;
         }
+
         .d-flex.gap-3.mb-3.align-items-end.flex-wrap {
             flex-direction: column;
             align-items: stretch !important;
         }
-        .d-flex.gap-3.mb-3.align-items-end.flex-wrap > div {
+
+        .d-flex.gap-3.mb-3.align-items-end.flex-wrap>div {
             width: 100%;
         }
+
         .d-flex.gap-3.mb-3.align-items-end.flex-wrap select,
         .d-flex.gap-3.mb-3.align-items-end.flex-wrap input {
             width: 100% !important;
         }
+
         #cpBtnGroup .d-flex {
             flex-direction: column;
             gap: 4px;
         }
+
         .legend {
             flex-wrap: wrap;
             gap: 6px !important;
         }
+
         .page-title-box {
             flex-direction: column;
             align-items: flex-start !important;
         }
+
         .page-title-box .nav-tabs {
             width: 100%;
         }
+
         .page-title-box .nav-tabs .nav-link {
             flex: 1;
             text-align: center;
             font-size: .8rem;
         }
-        #tab-pagos > .card-body,
+
+        #tab-pagos>.card-body,
         #tab-pagos .tab-pane .card-body:first-child {
             padding: 8px !important;
         }
+
         /* Historial mobile fix - card layout for historial */
-        #cpHistorialBody .border.rounded-3.mb-3 > div:first-child {
+        #cpHistorialBody .border.rounded-3.mb-3>div:first-child {
             flex-direction: column;
             align-items: flex-start !important;
             gap: 6px;
             padding: 8px 12px !important;
         }
+
         #cpHistorialBody .border.rounded-3.mb-3 .badge.fs-6 {
             font-size: .75rem !important;
             padding: 4px 8px !important;
         }
+
         #cpHistorialBody .cp-historial-table {
             font-size: .75rem !important;
             width: 100%;
         }
+
         #cpHistorialBody .cp-historial-table thead {
             display: none;
         }
+
         #cpHistorialBody .cp-historial-table tbody tr {
             display: block;
             padding: 4px 8px;
             border-bottom: 1px solid #eee;
             position: relative;
         }
+
         #cpHistorialBody .cp-historial-table tbody tr:last-child {
             border-bottom: none;
         }
+
         #cpHistorialBody .cp-historial-table tbody td {
             display: block;
             padding: 2px 0 !important;
@@ -555,6 +600,7 @@
             white-space: normal !important;
             text-align: left !important;
         }
+
         #cpHistorialBody .cp-historial-table tbody td:before {
             content: attr(data-label);
             font-weight: 600;
@@ -565,40 +611,51 @@
             text-transform: uppercase;
             letter-spacing: .03rem;
         }
+
         #cpHistorialBody .cp-historial-table tbody td:first-child:before {
             content: 'N°';
         }
+
         #cpHistorialBody .cp-historial-table tbody td:nth-child(2):before {
             content: 'Fecha';
         }
+
         #cpHistorialBody .cp-historial-table tbody td:nth-child(3):before {
             content: 'Monto';
         }
+
         #cpHistorialBody .cp-historial-table tbody td:nth-child(4):before {
             content: 'Pagado';
         }
+
         #cpHistorialBody .cp-historial-table tbody td:nth-child(5):before {
             content: 'Tiempo';
         }
+
         #cpHistorialBody .cp-historial-table tbody td:nth-child(6):before {
             content: 'Comprobante';
         }
+
         #cpHistorialBody .table-responsive {
             max-height: none !important;
             overflow-x: visible;
         }
+
         #tab-historial .d-flex.gap-2.mb-3 {
             flex-direction: column;
             align-items: stretch !important;
         }
+
         #tab-historial .d-flex.gap-2.mb-3 input {
             width: 100% !important;
         }
+
         /* Mobile historial header text fix */
         #cpHistorialBody .cp-historial-header-text {
             font-size: .85rem !important;
             word-break: break-word;
         }
+
         #cpHistorialBody .small.text-muted {
             word-break: break-word;
         }
@@ -669,6 +726,30 @@
         dentro_de_margen: 'cuota-dentro_de_margen',
     };
 
+    function tipoActual() {
+        const h = document.getElementById('tipoRecurso');
+        return h.value;
+    }
+
+    function ep(tipo) {
+        if (tipo === 'articulos') {
+            return {
+                control: BASE + 'api/control-pagos-articulos',
+                controlHistorial: BASE + 'api/control-pagos-articulos/historial',
+                carga: BASE + 'api/cargar-pago-articulo',
+                cargaCuotas: BASE + 'api/cargar-pago-articulo/cuotas',
+                cargaDeuda: BASE + 'api/cargar-pago-articulo/deuda',
+            };
+        }
+        return {
+            control: BASE + 'api/control-pagos',
+            controlHistorial: BASE + 'api/control-pagos/historial',
+            carga: BASE + 'api/cargar-pago',
+            cargaCuotas: BASE + 'api/cargar-pago/cuotas',
+            cargaDeuda: BASE + 'api/cargar-pago/deuda',
+        };
+    }
+
     function remarcarIdx() {
         const hoyMs = Date.now();
         const dPerm = _diasRetraso;
@@ -709,8 +790,9 @@
         const vw = isMobile ? 'min-width:120px' : 'min-width:200px';
         let headerHtml = `<th style="${stickCls};${vw}">Vendedor</th>
         <th style="${stickCls2};width:40px"></th>`;
+        const tipo = tipoActual();
         if (!_agrupado) {
-            headerHtml += `<th style="min-width:140px">Colección</th>`;
+            headerHtml += `<th style="min-width:140px">${tipo === 'articulos' ? 'Artículos' : 'Colección'}</th>`;
         }
         headerHtml += `<th style="min-width:80px">Monto</th>`;
         _fechas.forEach((f, i) => {
@@ -739,9 +821,15 @@
             let cells = `<td style="${cellStick}"><strong>${r.vendedor_nombre}</strong><br><small class="text-muted">${r.vendedor_cedula || ''}</small></td>
             <td style="${cellStick2};text-align:center">${dots}</td>`;
             if (!_agrupado) {
-                cells += `<td>${r.coleccion_nombre}<br><small class="text-muted">${r.coleccion_tipo}</small></td>`;
+                const tipo = tipoActual();
+                if (tipo === 'articulos') {
+                    cells += `<td>${r.articulos_nombres || ''}</td>`;
+                } else {
+                    cells += `<td>${r.coleccion_nombre || ''}<br><small class="text-muted">${r.coleccion_tipo || ''}</small></td>`;
+                }
             }
-            cells += `<td>$${parseFloat(r.precio_venta_vendedor || 0).toFixed(2)}</td>`;
+            const monto = r.monto || r.monto_total || r.precio_venta_vendedor || 0;
+            cells += `<td>$${parseFloat(monto).toFixed(2)}</td>`;
 
             _fechas.forEach(f => {
                 const c = cuotasMap[f];
@@ -763,11 +851,11 @@
                     vendedor_id: r.vendedor_id,
                     vendedor_nombre: r.vendedor_nombre,
                     vendedor_cedula: r.vendedor_cedula,
-                    precio_venta_vendedor: 0,
+                    monto: 0,
                     cuotas: [],
                 };
             }
-            grupos[key].precio_venta_vendedor += parseFloat(r.precio_venta_vendedor || 0);
+            grupos[key].monto += parseFloat(r.monto || r.precio_venta_vendedor || 0);
             (r.cuotas || []).forEach(c => grupos[key].cuotas.push(c));
         });
         return Object.values(grupos);
@@ -780,11 +868,13 @@
     }
 
     async function cargarTabla() {
+        const tipo = tipoActual();
         const empresaId = document.getElementById('empresa').value;
         const tempId = document.getElementById('campaniaSelect').value;
         if (!empresaId || !tempId) return;
 
-        const res = await fetch(`${BASE}api/control-pagos?empresa_id=${empresaId}&temporada_id=${tempId}`);
+        const endpoints = ep(tipo);
+        const res = await fetch(`${endpoints.control}?empresa_id=${empresaId}&temporada_id=${tempId}`);
         const json = await res.json();
 
         _fechas = json.data?.cuotas_fechas || [];
@@ -826,6 +916,8 @@
             selEmp.value = empresas[0].id;
             filtrarTemporadas(selEmp.value);
             cargarTabla();
+            const tipo = tipoActual();
+            document.getElementById('cpDropPremio').style.display = tipo === 'articulos' ? 'none' : '';
         }
 
         selEmp.addEventListener('change', () => {
@@ -850,6 +942,13 @@
             btnAgrupar.classList.toggle('btn-outline-warning', !_agrupado);
             const filas = _agrupado ? agruparPorVendedor(_allRows) : _allRows;
             renderizar(filtrarLocal(filas));
+        });
+
+        // Tipo recurso toggle
+        document.getElementById('tipoRecurso').addEventListener('change', () => {
+            const tipo = tipoActual();
+            document.getElementById('cpDropPremio').style.display = tipo === 'articulos' ? 'none' : '';
+            cargarTabla();
         });
 
         // Buscador
@@ -1024,6 +1123,8 @@
     // ============ Cargar Pago ============
 
     function abrirPago(btn, vendedorId) {
+        const tipo = tipoActual();
+        const endpoints = ep(tipo);
         const empresaId = document.getElementById('empresa').value;
         const tempId = document.getElementById('campaniaSelect').value;
         const vendedorNombre = btn.closest('tr').querySelector('td:nth-child(1)').textContent.trim().split('\n')[0];
@@ -1046,7 +1147,7 @@
         document.getElementById('cpModalDialog').classList.remove('modal-xl');
         document.getElementById('cpMontoLabel').textContent = 'Monto pagado (USD)';
 
-        fetch(`${BASE}api/cargar-pago/cuotas?empresa_id=${empresaId}&temporada_id=${tempId}&vendedor_id=${vendedorId}`)
+        fetch(`${endpoints.cargaCuotas}?empresa_id=${empresaId}&temporada_id=${tempId}&vendedor_id=${vendedorId}`)
             .then(r => r.json())
             .then(json => {
                 const cuotas = json.data?.cuotas || [];
@@ -1059,8 +1160,10 @@
 
                 const sel = document.getElementById('cpCuotaSelect');
                 sel.innerHTML = '<option value="">Seleccione cuota...</option>';
+                const nombreCampo = tipo === 'articulos' ? 'articulo_nombre' : 'coleccion_nombre';
                 cuotas.forEach(c => {
-                    sel.innerHTML += `<option value="${c.id}">#${c.numero_cuota} - ${c.coleccion_nombre} - $${parseFloat(c.monto_pendiente).toFixed(2)}</option>`;
+                    const label = c[nombreCampo] || '';
+                    sel.innerHTML += `<option value="${c.id}">#${c.numero_cuota} - ${label} - $${parseFloat(c.monto_pendiente).toFixed(2)}</option>`;
                 });
 
                 new bootstrap.Modal(document.getElementById('cpModal')).show();
@@ -1097,6 +1200,8 @@
     // ============ Estatus de Deuda ============
 
     function verDeuda(btn, vendedorId) {
+        const tipo = tipoActual();
+        const endpoints = ep(tipo);
         const empresaId = document.getElementById('empresa').value;
         const tempId = document.getElementById('campaniaSelect').value;
         const vendedorNombre = btn.closest('tr').querySelector('td:nth-child(1)').textContent.trim().split('\n')[0];
@@ -1106,7 +1211,7 @@
         const modal = new bootstrap.Modal(document.getElementById('cpDeudaModal'));
         modal.show();
 
-        fetch(`${BASE}api/cargar-pago/deuda?empresa_id=${empresaId}&temporada_id=${tempId}&vendedor_id=${vendedorId}`)
+        fetch(`${endpoints.cargaDeuda}?empresa_id=${empresaId}&temporada_id=${tempId}&vendedor_id=${vendedorId}`)
             .then(r => r.json())
             .then(json => {
                 if (!json.value) {
@@ -1407,8 +1512,10 @@
 
     document.getElementById('cpForm').addEventListener('submit', async function(e) {
         e.preventDefault();
+        const tipo = tipoActual();
+        const endpoints = ep(tipo);
         const fd = new FormData(this);
-        const res = await fetch(BASE + 'api/cargar-pago', {
+        const res = await fetch(endpoints.carga, {
             method: 'POST',
             body: fd
         });
@@ -1459,7 +1566,9 @@
     window.verComprobante = function(btn) {
         try {
             var c = JSON.parse(btn.getAttribute('data-comp'));
-        } catch(e) { return; }
+        } catch (e) {
+            return;
+        }
         var img = document.querySelector('#cpVerCompModal img');
         if (img) img.src = c.comprobante ? BASE + c.comprobante : '';
         var body = document.getElementById('cpVerCompBody');
@@ -1499,6 +1608,8 @@
     }
 
     async function cargarHistorial() {
+        const tipo = tipoActual();
+        const endpoints = ep(tipo);
         const empresaId = document.getElementById('empresa').value;
         const tempId = document.getElementById('campaniaSelect').value;
         if (!empresaId || !tempId) return;
@@ -1507,7 +1618,7 @@
         body.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><div class="text-muted mt-2">Cargando historial...</div></div>';
 
         try {
-            const res = await fetch(`${BASE}api/control-pagos/historial?empresa_id=${empresaId}&temporada_id=${tempId}`);
+            const res = await fetch(`${endpoints.controlHistorial}?empresa_id=${empresaId}&temporada_id=${tempId}`);
             const json = await res.json();
             if (!json.value) {
                 body.innerHTML = `<div class="alert alert-danger m-3">${json.message}</div>`;
@@ -1529,15 +1640,26 @@
                     if (!q) return true;
                     return (cp.numero_operacion || '').toLowerCase().includes(q);
                 });
-                return { cuota: c, comps: comps };
+                return {
+                    cuota: c,
+                    comps: comps
+                };
             });
-            var hasMatch = q ? cuotas.some(function(x) { return x.comps.length > 0; }) : true;
-            return { grupo: g, cuotas: cuotas, visible: hasMatch };
+            var hasMatch = q ? cuotas.some(function(x) {
+                return x.comps.length > 0;
+            }) : true;
+            return {
+                grupo: g,
+                cuotas: cuotas,
+                visible: hasMatch
+            };
         });
 
         var body = document.getElementById('cpHistorialBody');
         var countEl = document.getElementById('historialCount');
-        var visibleCount = filtrados.filter(function(f) { return f.visible; }).length;
+        var visibleCount = filtrados.filter(function(f) {
+            return f.visible;
+        }).length;
 
         if (countEl) countEl.textContent = visibleCount + ' resultado' + (visibleCount !== 1 ? 's' : '');
 
@@ -1553,55 +1675,57 @@
             var g = f.grupo;
             return '<div class="border rounded-3 mb-3 shadow-sm overflow-hidden" style="border-radius:10px!important">' +
                 '<div class="d-flex align-items-center justify-content-between px-3 py-3" style="background:linear-gradient(135deg,#f8f9fa 0%,#fff 100%);border-bottom:1px solid #e9ecef">' +
-                    '<div class="d-flex align-items-center gap-3">' +
-                        '<div class="d-flex align-items-center justify-content-center rounded-circle" style="width:40px;height:40px;background:#7367f0;color:#fff;font-size:1.1rem">' +
-                            '<i class="bx bx-package"></i>' +
-                        '</div>' +
-                        '<div>' +
-                            '<div class="fw-semibold cp-historial-header-text" style="font-size:.95rem">' + (g.coleccion_nombre || 'Colección') + '</div>' +
-                            '<div class="small text-muted">' +
-                                '<i class="bx bx-user me-1"></i>' + (g.vendedor_nombre || '—') +
-                                (g.vendedor_cedula ? '<span class="ms-2">· ' + g.vendedor_cedula + '</span>' : '') +
-                                (g.coleccion_tipo ? '<span class="ms-2 badge bg-light text-muted fw-normal">' + g.coleccion_tipo + '</span>' : '') +
-                            '</div>' +
-                        '</div>' +
-                    '</div>' +
-                    _cpHistorialResumen(f.cuotas.map(function(x) { return x.cuota; })) +
+                '<div class="d-flex align-items-center gap-3">' +
+                '<div class="d-flex align-items-center justify-content-center rounded-circle" style="width:40px;height:40px;background:#7367f0;color:#fff;font-size:1.1rem">' +
+                '<i class="bx bx-package"></i>' +
+                '</div>' +
+                '<div>' +
+                '<div class="fw-semibold cp-historial-header-text" style="font-size:.95rem">' + (g.articulos_nombres || g.coleccion_nombre || 'Artículos') + '</div>' +
+                '<div class="small text-muted">' +
+                '<i class="bx bx-user me-1"></i>' + (g.vendedor_nombre || '—') +
+                (g.vendedor_cedula ? '<span class="ms-2">· ' + g.vendedor_cedula + '</span>' : '') +
+                (g.coleccion_tipo ? '<span class="ms-2 badge bg-light text-muted fw-normal">' + g.coleccion_tipo + '</span>' : '') +
+                '</div>' +
+                '</div>' +
+                '</div>' +
+                _cpHistorialResumen(f.cuotas.map(function(x) {
+                    return x.cuota;
+                })) +
                 '</div>' +
                 '<div class="p-0">' +
-                    '<table class="table table-hover align-middle mb-0 cp-historial-table" style="font-size:.85rem">' +
-                        '<thead class="table-light small text-muted text-uppercase" style="letter-spacing:.03rem;font-size:.7rem">' +
-                            '<tr>' +
-                                '<th style="width:60px" class="ps-3">#</th>' +
-                                '<th style="width:110px">Fecha</th>' +
-                                '<th>Monto</th>' +
-                                '<th>Pagado</th>' +
-                                '<th style="width:60px" class="text-center">Tiempo</th>' +
-                                '<th>Comprobante(s)</th>' +
-                            '</tr>' +
-                        '</thead>' +
-                        '<tbody>' +
-                            f.cuotas.map(function(x) {
-                                var c = x.cuota;
-                                var comps = x.comps;
-                                var at = c.pagado_a_tiempo == 1 ? '<span class="badge bg-soft-success text-success" style="font-size:.65rem"><i class="bx bx-check fs-6"></i></span>' : '';
-                                return '<tr>' +
-                                    '<td class="fw-semibold ps-3" data-label="N°">' + (c.numero_cuota || '—') + '</td>' +
-                                    '<td class="text-nowrap" data-label="Fecha">' + (c.fecha_pago || '—') + '</td>' +
-                                    '<td class="fw-semibold" data-label="Monto">$' + parseFloat(c.monto_a_pagar || 0).toFixed(2) + '</td>' +
-                                    '<td class="fw-semibold text-success" data-label="Pagado">$' + parseFloat(c.monto_pagado || 0).toFixed(2) + '</td>' +
-                                    '<td class="text-center" data-label="Tiempo">' + at + '</td>' +
-                                    '<td data-label="Comprobante">' +
-                                        '<div class="d-flex flex-wrap gap-1">' +
-                                            (comps.length ? comps.map(_cpCompPill).join('') : '<span class="text-muted" style="font-size:.8rem">—</span>') +
-                                        '</div>' +
-                                    '</td>' +
-                                '</tr>';
-                            }).join('') +
-                        '</tbody>' +
-                    '</table>' +
+                '<table class="table table-hover align-middle mb-0 cp-historial-table" style="font-size:.85rem">' +
+                '<thead class="table-light small text-muted text-uppercase" style="letter-spacing:.03rem;font-size:.7rem">' +
+                '<tr>' +
+                '<th style="width:60px" class="ps-3">#</th>' +
+                '<th style="width:110px">Fecha</th>' +
+                '<th>Monto</th>' +
+                '<th>Pagado</th>' +
+                '<th style="width:60px" class="text-center">Tiempo</th>' +
+                '<th>Comprobante(s)</th>' +
+                '</tr>' +
+                '</thead>' +
+                '<tbody>' +
+                f.cuotas.map(function(x) {
+                    var c = x.cuota;
+                    var comps = x.comps;
+                    var at = c.pagado_a_tiempo == 1 ? '<span class="badge bg-soft-success text-success" style="font-size:.65rem"><i class="bx bx-check fs-6"></i></span>' : '';
+                    return '<tr>' +
+                        '<td class="fw-semibold ps-3" data-label="N°">' + (c.numero_cuota || '—') + '</td>' +
+                        '<td class="text-nowrap" data-label="Fecha">' + (c.fecha_pago || '—') + '</td>' +
+                        '<td class="fw-semibold" data-label="Monto">$' + parseFloat(c.monto_a_pagar || 0).toFixed(2) + '</td>' +
+                        '<td class="fw-semibold text-success" data-label="Pagado">$' + parseFloat(c.monto_pagado || 0).toFixed(2) + '</td>' +
+                        '<td class="text-center" data-label="Tiempo">' + at + '</td>' +
+                        '<td data-label="Comprobante">' +
+                        '<div class="d-flex flex-wrap gap-1">' +
+                        (comps.length ? comps.map(_cpCompPill).join('') : '<span class="text-muted" style="font-size:.8rem">—</span>') +
+                        '</div>' +
+                        '</td>' +
+                        '</tr>';
+                }).join('') +
+                '</tbody>' +
+                '</table>' +
                 '</div>' +
-            '</div>';
+                '</div>';
         }).join('') || '<div class="text-center py-5 text-muted"><i class="bx bx-search fs-1 d-block mb-2"></i>No se encontraron comprobantes con ese número de operación.</div>';
     }
 
