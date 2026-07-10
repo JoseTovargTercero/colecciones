@@ -67,7 +67,7 @@
                                         <option value="">Seleccione vendedor...</option>
                                     </select>
                                     <button class="btn btn-outline-primary" type="button" onclick="window.va.nuevoVendedor()" title="Nuevo vendedor">
-                                        <i class="bx bx-plus"></i> Agregar nuevo
+                                        <i class="bx bx-plus"></i> Nuevo
                                     </button>
                                 </div>
                             </div>
