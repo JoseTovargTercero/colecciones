@@ -94,12 +94,13 @@ $router->group(['middleware' => LoginSuscripcionMiddleware::class], function ($r
     $router->get('/articulos',           ['vista' => 'modules/articulos_view',           'vistaData' => ['titulo' => 'Artículos']]);
     $router->get('/premios',             ['vista' => 'modules/premios_view',             'vistaData' => ['titulo' => 'Premios']]);
     $router->get('/vendedores',          ['vista' => 'modules/vendedores_view',          'vistaData' => ['titulo' => 'Vendedores']]);
-    $router->get('/vendedore_articulo', ['vista' => 'modules/vendedore_articulo_view', 'vistaData' => ['titulo' => 'Asignaciones de Artículos']]);
+    $router->get('/vendedore_articulo',  ['vista' => 'modules/vendedore_articulo_view',  'vistaData' => ['titulo' => 'Asignaciones de Artículos']]);
     $router->get('/asignaciones',        ['vista' => 'modules/asignaciones_view',        'vistaData' => ['titulo' => 'Asignaciones']]);
     $router->get('/control_pagos',       ['vista' => 'modules/control_pagos_view',       'vistaData' => ['titulo' => 'Control de pagos']]);
-    $router->get('/preferencias-premios',['vista' => 'modules/preferencias_premios_view','vistaData' => ['titulo' => 'Preferencias de Premios']]);
+    $router->get('/preferencias-premios', ['vista' => 'modules/preferencias_premios_view', 'vistaData' => ['titulo' => 'Preferencias de Premios']]);
     $router->get('/dashboard',           ['vista' => 'modules/dashboard_view',           'vistaData' => ['titulo' => 'Dashboard']]);
-    $router->get('/dashboard-vendedor', ['vista' => 'modules/dashboard_vendedor_view', 'vistaData' => ['titulo' => 'Mi Dashboard']]);
+    $router->get('/deudas',              ['vista' => 'modules/deudas_view',              'vistaData' => ['titulo' => 'Tus deudas']]);
+    $router->get('/dashboard-vendedor',  ['vista' => 'modules/dashboard_vendedor_view',  'vistaData' => ['titulo' => 'Mi Dashboard']]);
     $router->get('/mi-suscripcion',      ['vista' => 'modules/mi_suscripcion_view',      'vistaData' => ['titulo' => 'Mi Suscripción']]);
 });
 
@@ -107,7 +108,7 @@ $router->group(['middleware' => LoginSuscripcionMiddleware::class], function ($r
 $router->group(['middleware' => LoginRequiredMiddleware::class], function ($router) {
     $router->get('/suscripcion/plan',    ['controlador' => SuscripcionController::class, 'accion' => 'planView']);
     $router->get('/suscripcion/vencida', ['controlador' => SuscripcionController::class, 'accion' => 'vencidaView']);
-    $router->get('/suscripcion/pendiente',['controlador' => SuscripcionController::class, 'accion' => 'pendienteView']);
+    $router->get('/suscripcion/pendiente', ['controlador' => SuscripcionController::class, 'accion' => 'pendienteView']);
     $router->post('/suscripcion/pagar',  ['controlador' => SuscripcionController::class, 'accion' => 'pagar']);
 });
 
@@ -211,6 +212,8 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/cargar-pago', ['controlador' => CargaPagosController::class, 'accion' => 'procesar']);
     $router->get('/cargar-pago/cuotas', ['controlador' => CargaPagosController::class, 'accion' => 'cuotas']);
     $router->get('/cargar-pago/deuda', ['controlador' => CargaPagosController::class, 'accion' => 'deuda']);
+    $router->get('/mis-deudas', ['controlador' => CargaPagosController::class, 'accion' => 'misDeudas']);
+    $router->post('/cargar-pago-pendiente', ['controlador' => CargaPagosController::class, 'accion' => 'solicitarPendiente']);
 
     // control-pagos-articulos
     $router->get('/control-pagos-articulos', ['controlador' => ControlPagosArticuloController::class, 'accion' => 'listar']);

@@ -90,7 +90,7 @@
                 <div class="wizard-step" id="aWStep2" style="display:none">
                     <div class="row justify-content-center">
                         <div class="col-lg-8">
-                            <h5 class="mb-3 text-center">Colección y Temporada</h5>
+                            <h5 class="mb-3 text-center">Colección y Campaña</h5>
                             <div class="mb-3">
                                 <label for="aEmpresa" class="form-label">Empresa <span class="text-danger">*</span></label>
                                 <select class="form-select" id="aEmpresa" required>
@@ -98,9 +98,9 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label for="aTemporada" class="form-label">Temporada <span class="text-danger">*</span></label>
+                                <label for="aTemporada" class="form-label">Campaña <span class="text-danger">*</span></label>
                                 <select class="form-select" id="aTemporada" required>
-                                    <option value="">Seleccione temporada...</option>
+                                    <option value="">Seleccione campaña...</option>
                                 </select>
                             </div>
                             <div class="mb-3">
@@ -496,7 +496,7 @@
             this._fillSelect('aTemporada', temps, t => ({
                 v: t.id,
                 l: t.nombre
-            }), 'Seleccione temporada...');
+            }), 'Seleccione una campaña...');
 
             this.coleccionesSel = [];
             this._renderColecciones();
@@ -519,13 +519,19 @@
             const sel = document.getElementById('aColeccionSel');
             const opt = sel.selectedOptions[0];
             if (!opt || !opt.value) {
-                Swal.fire({ icon: 'warning', title: 'Seleccione una colección' });
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Seleccione una colección'
+                });
                 return;
             }
             const data = JSON.parse(opt.getAttribute('data-row') || '{}');
             const exist = this.coleccionesSel.find(i => i.id === data.id);
             if (exist) {
-                Swal.fire({ icon: 'info', title: 'Ya agregaste esta colección' });
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Ya agregaste esta colección'
+                });
                 return;
             }
             this.coleccionesSel.push({
@@ -808,7 +814,10 @@
 
             const payload = {
                 vendedor_id: document.getElementById('aVendedor').value,
-                colecciones: this.coleccionesSel.map(c => ({ id: c.id, cantidad: c.cantidad })),
+                colecciones: this.coleccionesSel.map(c => ({
+                    id: c.id,
+                    cantidad: c.cantidad
+                })),
                 temporada_id: document.getElementById('aTemporada').value,
                 fecha_asignacion: document.getElementById('aFechaAsig').value,
                 cuotas: this.cuotasCalc
@@ -1015,12 +1024,22 @@
             document.getElementById('aAutoFields').style.display = '';
             document.getElementById('aIntervaloField').style.display = '';
 
-            this._fillSelect('aEmpresa', this.empresas, e => ({ v: e.id, l: e.nombre, data: e }));
+            this._fillSelect('aEmpresa', this.empresas, e => ({
+                v: e.id,
+                l: e.nombre,
+                data: e
+            }));
             this._fillSelect('aTemporada', [], () => ({}));
             this._fillSelect('aColeccionSel', [], () => ({}));
 
-            $('#aVendedor').select2({ width: '100%', dropdownParent: $('#aWStep1') });
-            $('#aColeccionSel').select2({ width: '100%', dropdownParent: $('#aWStep2') });
+            $('#aVendedor').select2({
+                width: '100%',
+                dropdownParent: $('#aWStep1')
+            });
+            $('#aColeccionSel').select2({
+                width: '100%',
+                dropdownParent: $('#aWStep2')
+            });
 
             this.goStep(1);
         },
@@ -1028,8 +1047,12 @@
         hideForm() {
             document.getElementById('aFormView').style.display = 'none';
             document.getElementById('aListView').style.display = '';
-            try { $('#aVendedor').select2('destroy'); } catch (e) {}
-            try { $('#aColeccionSel').select2('destroy'); } catch (e) {}
+            try {
+                $('#aVendedor').select2('destroy');
+            } catch (e) {}
+            try {
+                $('#aColeccionSel').select2('destroy');
+            } catch (e) {}
         }
     };
 

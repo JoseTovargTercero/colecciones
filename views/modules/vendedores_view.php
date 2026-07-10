@@ -1,3 +1,74 @@
+<style>
+    .btn-primary-light {
+        gap: 3;
+        text-wrap-mode: nowrap;
+        color: #303030;
+        background-color: #696cff17;
+        border-color: #696cff6b;
+        box-shadow: 0 0.125rem 0.25rem 0 rgba(105, 108, 255, 0.4);
+    }
+
+    .info-banner {
+        position: relative;
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #f0f2ff 0%, #e8ecff 100%);
+        padding: 16px 20px 16px 52px;
+        margin-bottom: 16px;
+        box-shadow: 0 1px 3px rgba(105, 108, 255, 0.08);
+    }
+
+    .info-banner::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 8px;
+        bottom: 8px;
+        width: 3px;
+        border-radius: 2px;
+        background: linear-gradient(180deg, #696cff, #8f93ff);
+    }
+
+    .info-banner .icon-wrap {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background: linear-gradient(135deg, #696cff, #8f93ff);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        box-shadow: 0 2px 6px rgba(105, 108, 255, 0.3);
+    }
+
+    .info-banner .info-text {
+        font-size: 0.8125rem;
+        line-height: 1.6;
+        color: #3a3a5c;
+    }
+
+    .info-banner .info-text strong {
+        color: #1e1e3a;
+    }
+
+    .info-banner .badge-solicitar {
+        display: inline-block;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        padding: 1px 8px;
+        border-radius: 4px;
+        line-height: 1.7;
+        color: #303030;
+        background-color: #696cff17;
+        border: 1px solid #696cff6b;
+        vertical-align: middle;
+    }
+</style>
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -10,13 +81,24 @@
 
     <div class="card">
         <div class="card-body">
-            <table id="vTabla" class="table table-hover" data-toggle="table" data-url="<?= BASE_URL ?>api/vendedores" data-response-handler="window.v.resp" data-search="true" data-pagination="true" data-page-size="15">
+            <div class="info-banner" role="alert">
+                <div class="icon-wrap"><i class="bx bx-info-circle"></i></div>
+                <div class="info-text" style="font-size: 15px;">
+                    El botón <span class="badge-solicitar">SOLICITAR PAGO <img src="<?= BASE_URL ?>/public/assets/images/logo-cd.svg" alt="Logo" width="15" height="15"></span> solo se muestra cuando el vendedor está registrado en la plataforma y tiene cuentas por pagar.
+                    Invita a tus vendedores a registrarse para que puedas <strong>solicitar y recibir pagos, validar transacciones y gestionar sus solicitudes de premios, todo directamente desde la aplicación.</strong>
+                </div>
+            </div>
+            <div id="vTablaToolbar" class="d-flex align-items-center gap-2 py-1">
+                <h6 class="mb-0 fw-semibold" style="color:#495057;font-size:0.9rem">Listado de vendedores</h6>
+            </div>
+            <table id="vTabla" class="table table-hover" data-toggle="table" data-toolbar="#vTablaToolbar" data-url="<?= BASE_URL ?>api/vendedores" data-response-handler="window.v.resp" data-search="true" data-pagination="true" data-page-size="15">
                 <thead>
                     <tr>
                         <th data-field="nombre" data-sortable="true">Nombre</th>
                         <th data-field="cedula" data-sortable="true">Cédula</th>
                         <th data-field="telefono" data-sortable="true">Teléfono</th>
                         <th data-field="nivel" data-sortable="true" data-formatter="window.v.fNivel">Nivel</th>
+                        <th data-align="center" data-formatter="window.v.notif">Solicitar pago</th>
                         <th data-formatter="window.v.fAcc" data-align="center">Acciones</th>
                     </tr>
                 </thead>
@@ -131,23 +213,77 @@
             const cls = v === 'VENDEDOR' ? 'bg-secondary' : v === 'DISTRIBUIDOR' ? 'bg-primary' : 'bg-warning text-dark';
             return `<span class="badge ${cls}">${v}</span>`;
         },
-        fAcc: (val, x) => {
+
+        fAcc: (v, row) => {
+            return `<div class="text-center">
+                    <button class="btn btn-sm btn-outline-secondary a-dd-btn" data-id="${row.id}">⋮</button>
+                </div>`;
+        },
+        _closeMenu() {
+            document.querySelectorAll('.a-dd-menu').forEach(m => m.remove());
+            this._menuOpen = false;
+        },
+
+        _openMenu(btn, id, x) {
+            this._closeMenu();
+            const rect = btn.getBoundingClientRect();
+            const menu = document.createElement('ul');
+            menu.className = 'dropdown-menu show a-dd-menu';
+            menu.style.cssText = 'position:fixed;left:' + (rect.right - 160) + 'px;top:' + rect.bottom + 'px;z-index:9999';
+
+            menu.innerHTML = `
+                <li><a class="dropdown-item" href="javascript:void(0)" onclick='window.v.edit(${id})'><i class="bx bx-edit me-2"></i> Editar</a></li>
+                <li><a class="dropdown-item" href="javascript:void(0)" onclick='window.v.detalles(${id})'><i class="bx bx-detail  me-2"></i> Detalles</a></li>
+                <li><a class="dropdown-item" href="javascript:void(0)" onclick='window.v.del(${id})'><i class="bx bx-trash me-2"></i> Eliminar</a></li>
+            `;
+
+            document.body.appendChild(menu);
+            this._menuOpen = true;
+            setTimeout(() => document.addEventListener('click', this._onDocClick), 0);
+        },
+
+
+        _onDocClick(e) {
+            if (!e.target.closest('.a-dd-menu, .a-dd-btn')) {
+                window.v._closeMenu();
+                document.removeEventListener('click', window.v._onDocClick);
+            }
+        },
+
+
+        notif: (val, x) => {
             let xJ = JSON.stringify(x).replace(/'/g, "&apos;");
-            return `<button class="btn btn-sm btn-info" onclick='window.v.edit(${xJ})'>Editar</button>
-                <button class="btn btn-sm btn-secondary" onclick='window.v.detalles(${xJ})'>Detalles</button>
-                <button class="btn btn-sm btn-danger" onclick="window.v.del('${x.id}')">Borrar</button>`;
+            if (x.tiene_cuenta == 1 && parseFloat(x.total_deuda) > 0) {
+                return `<button class="btn btn-sm btn-primary-light" onclick='window.v.solictar_pago(${xJ})'><span>SOLICITAR</span> <img src="<?= BASE_URL ?>/public/assets/images/logo-cd.svg" alt="Logo" width="15" height="15"></button>`;
+            }
+            if (x.nivel === 'COMPRADOR FINAL') return;
+
+            let tel = x.telefono ? x.telefono.replace(/[^0-9]/g, '') : '';
+            if (tel.length === 11 && tel.startsWith('0')) tel = '58' + tel.slice(1);
+            else if (tel.length <= 10) tel = '58' + tel;
+            let msg = encodeURIComponent('¡Hola! 👋 Te invito a unirte a nuestra plataforma de colecciones. Desde allí podrás registrar tus clientes, controlar tus ventas, llevar el seguimiento de las cuotas y gestionar tus cobros de forma rápida y sencilla. Ingresa aquí: <?= rtrim(BASE_URL, '/') ?>/registro');
+            return `<a class="btn btn-sm btn-success" href="https://wa.me/${tel}?text=${msg}" target="_blank" rel="noopener"><i class="bx bxl-whatsapp me-1"></i> Invitar</a>`;
         },
         add() {
             document.getElementById('vForm').reset();
             document.getElementById('vId').value = '';
             new bootstrap.Modal(document.getElementById('vModal')).show();
         },
-        edit(x) {
-            document.getElementById('vId').value = x.id;
-            document.getElementById('vNombre').value = x.nombre;
-            document.getElementById('vCedula').value = x.cedula;
-            document.getElementById('vTelefono').value = x.telefono;
-            document.getElementById('vNivel').value = x.nivel;
+        async edit(id) {
+
+            const res = await fetch(this.api + '/' + id + '/detalles');
+            const json = await res.json();
+            if (!json.value || !json.data) {
+                document.getElementById('vDetLoading').innerHTML = '<p class="text-danger">' + (json.message || 'Error') + '</p>';
+                return;
+            }
+            const d = json.data;
+            document.getElementById('vId').value = id;
+            document.getElementById('vNombre').value = d.vendedor.nombre || '—';
+            document.getElementById('vCedula').value = d.vendedor.cedula || '—';
+            document.getElementById('vTelefono').value = d.vendedor.telefono || '—';
+            document.getElementById('vNivel').value = d.vendedor.nivel || '—';
+
             new bootstrap.Modal(document.getElementById('vModal')).show();
         },
         async save(e) {
@@ -191,14 +327,14 @@
             });
             $('#vTabla').bootstrapTable('refresh');
         },
-        async detalles(x) {
+        async detalles(id) {
             document.getElementById('vDetLoading').style.display = '';
             document.getElementById('vDetContent').style.display = 'none';
             const modal = new bootstrap.Modal(document.getElementById('vDetModal'));
             modal.show();
 
             try {
-                const res = await fetch(this.api + '/' + x.id + '/detalles');
+                const res = await fetch(this.api + '/' + id + '/detalles');
                 const json = await res.json();
                 if (!json.value || !json.data) {
                     document.getElementById('vDetLoading').innerHTML = '<p class="text-danger">' + (json.message || 'Error') + '</p>';
@@ -265,6 +401,15 @@
             } catch (e) {
                 document.getElementById('vDetLoading').innerHTML = '<p class="text-danger">Error de conexión.</p>';
             }
+        },
+        async init() {
+
+            document.getElementById('vTabla').addEventListener('click', e => {
+                const btn = e.target.closest('.a-dd-btn');
+                if (btn) this._openMenu(btn, btn.dataset.id);
+            });
         }
+
     };
+    document.addEventListener('DOMContentLoaded', () => window.v.init());
 </script>

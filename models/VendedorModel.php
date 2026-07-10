@@ -13,7 +13,21 @@ class VendedorModel
     public function listar(): array
     {
         $u = $_SESSION['user_id'] ?? '';
-        $r = $this->db->query("SELECT id, nombre, cedula, telefono, nivel FROM vendedores WHERE usuario_id='$u' ORDER BY created_at DESC");
+        $r = $this->db->query(
+            "SELECT v.id, v.nombre, v.cedula, v.telefono, v.nivel,
+                    CASE WHEN su.user_id IS NOT NULL THEN 1 ELSE 0 END AS tiene_cuenta,
+                    COALESCE((
+                        SELECT SUM(cc.monto_pendiente)
+                        FROM cuotas_coleccion cc
+                        INNER JOIN asignaciones_colecciones ac ON cc.asignacion_id = ac.id
+                        WHERE ac.vendedor_id = v.id
+                          AND cc.estatus_pago IN ('pendiente','vencido','dentro_de_margen')
+                    ), 0) AS total_deuda
+             FROM vendedores v
+             LEFT JOIN system_users su ON v.telefono = su.telefono AND su.deleted_at IS NULL
+             WHERE v.usuario_id='$u'
+             ORDER BY v.created_at DESC"
+        );
         return $r ? $r->fetch_all(MYSQLI_ASSOC) : [];
     }
 

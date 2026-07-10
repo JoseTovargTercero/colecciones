@@ -10,6 +10,11 @@ class CargaPagosModel
         $this->db = Database::getInstance();
     }
 
+    public function getDb()
+    {
+        return $this->db;
+    }
+
     public function procesar(array $d): array
     {
         $u = $_SESSION['user_id'] ?? '';
@@ -496,6 +501,155 @@ class CargaPagosModel
             $stmt->execute();
             $stmt->close();
         }
+    }
+
+    public function obtenerMisDeudas(string $userId): array
+    {
+        // Obtener teléfono del usuario
+        $stmt = $this->db->prepare("SELECT telefono FROM system_users WHERE user_id = ? AND deleted_at IS NULL");
+        $stmt->bind_param('s', $userId);
+        $stmt->execute();
+        $r = $stmt->get_result();
+        $userRow = $r->fetch_assoc();
+        $stmt->close();
+
+        if (!$userRow || empty($userRow['telefono'])) {
+            throw new Exception('Tu perfil no tiene un teléfono registrado.');
+        }
+        $telefono = $userRow['telefono'];
+
+        // Buscar vendedores con este teléfono
+        $stmt = $this->db->prepare(
+            "SELECT id, nombre, cedula, telefono, nivel, usuario_id FROM vendedores WHERE telefono = ?"
+        );
+        $stmt->bind_param('s', $telefono);
+        $stmt->execute();
+        $r = $stmt->get_result();
+        $vendedores = $r->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        if (empty($vendedores)) {
+            throw new Exception('No tienes un perfil de vendedor registrado con este teléfono.');
+        }
+        $vendedorInfo = $vendedores[0];
+
+        // Agrupar por gerente
+        $grupos = [];
+        foreach ($vendedores as $v) {
+            $gid = $v['usuario_id'];
+            if (isset($grupos[$gid])) continue;
+
+            // Datos del gerente
+            $gerente = null;
+            if (!empty($v['usuario_id'])) {
+                $s = $this->db->prepare(
+                    "SELECT user_id, nombre, email, telefono FROM system_users WHERE user_id = ? AND deleted_at IS NULL"
+                );
+                $s->bind_param('s', $v['usuario_id']);
+                $s->execute();
+                $rr = $s->get_result();
+                $gerente = $rr->fetch_assoc();
+                $s->close();
+            }
+
+            $vid = (int)$v['id'];
+
+            // Cuotas pendientes con pendiente_id
+            $s = $this->db->prepare(
+                "SELECT c.id, c.numero_cuota, c.monto_a_pagar, c.monto_pagado, c.monto_pendiente,
+                        c.fecha_pago, c.fecha_vencimiento, c.estatus_pago,
+                        ac.id as asignacion_id, ac.ganancia_vendedor, ac.costo,
+                        ac.temporada_id, ac.vendedor_id,
+                        cc.nombre as coleccion_nombre, cc.id as coleccion_combo_id,
+                         e.nombre as empresa_nombre, e.id as empresa_id,
+                         cp.id as pendiente_id,
+                         cp.monto as pendiente_monto,
+                         cp.numero_operacion as pendiente_operacion,
+                         cp.comprobante as pendiente_comprobante,
+                         cp.fecha_pago_comprobante as pendiente_fecha,
+                         cp.created_at as pendiente_created_at
+                 FROM cuotas_coleccion c
+                 INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
+                 INNER JOIN colecciones_combos cc ON ac.coleccion_combo_id = cc.id
+                 INNER JOIN empresas e ON cc.empresa_id = e.id
+                 LEFT JOIN comprobantes_pendientes cp ON c.id = cp.cuota_id AND cp.status = 'pendiente'
+                 WHERE ac.vendedor_id = ? AND ac.estado = 'activa'
+                   AND c.estatus_pago IN ('pendiente','vencido','dentro_de_margen')
+                 ORDER BY e.nombre, cc.nombre, c.fecha_pago ASC"
+            );
+            $s->bind_param('i', $vid);
+            $s->execute();
+            $rr = $s->get_result();
+            $cuotas = $rr->fetch_all(MYSQLI_ASSOC);
+            $s->close();
+
+            // Resumen
+            $totalDeuda = 0;
+            $totalPagado = 0;
+            $gananciaPorAsignacion = [];
+            foreach ($cuotas as &$c) {
+                $totalDeuda += (float)$c['monto_a_pagar'];
+                $totalPagado += (float)$c['monto_pagado'];
+                $asigId = (int)$c['asignacion_id'];
+                if (!isset($gananciaPorAsignacion[$asigId])) {
+                    $gananciaPorAsignacion[$asigId] = (float)($c['ganancia_vendedor'] ?? 0);
+                }
+            }
+            unset($c);
+            $totalGanancia = array_sum($gananciaPorAsignacion);
+            $pendiente = $totalDeuda - $totalPagado;
+            $pendienteEfectivo = max(0, $pendiente - $totalGanancia);
+
+            // Comprobantes (historial)
+            $s = $this->db->prepare(
+                "SELECT cp.id, cp.cuota_id, cp.monto, cp.numero_operacion, cp.fecha_pago_comprobante, cp.created_at,
+                        c.numero_cuota
+                 FROM comprobantes cp
+                 INNER JOIN cuotas_coleccion c ON cp.cuota_id = c.id
+                 INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
+                 WHERE ac.vendedor_id = ? AND ac.estado = 'activa'
+                 ORDER BY cp.created_at DESC"
+            );
+            $s->bind_param('i', $vid);
+            $s->execute();
+            $rr = $s->get_result();
+            $comprobantes = $rr->fetch_all(MYSQLI_ASSOC);
+            $s->close();
+
+            // Premios pendientes
+            $s = $this->db->prepare(
+                "SELECT ps.id, ps.status, ps.created_at, p.nombre, p.valor
+                 FROM premios_solicitados ps
+                 INNER JOIN premios p ON ps.premio_id = p.id
+                 WHERE ps.vendedor_id = ? AND ps.status = 'pendiente'
+                 ORDER BY ps.created_at DESC"
+            );
+            $s->bind_param('i', $vid);
+            $s->execute();
+            $rr = $s->get_result();
+            $premios = $rr->fetch_all(MYSQLI_ASSOC);
+            $s->close();
+
+            $grupos[$gid] = [
+                'gerente' => $gerente,
+                'vendedor' => $v,
+                'resumen' => [
+                    'total_deuda' => $totalDeuda,
+                    'total_pagado' => $totalPagado,
+                    'pendiente' => $pendiente,
+                    'total_ganancia_vendedor' => $totalGanancia,
+                    'pendiente_efectivo' => $pendienteEfectivo,
+                ],
+                'cuotas' => $cuotas,
+                'comprobantes' => $comprobantes,
+                'premios' => $premios,
+            ];
+        }
+
+        return [
+            'vendedor' => $vendedorInfo,
+            'grupos' => array_values($grupos),
+        ];
     }
 
     public function obtenerPremiosVendedor(int $empresa_id, string $temporada_id, int $vendedor_id): array
