@@ -18,12 +18,14 @@ class AsignacionModel
                     cc.nombre as coleccion_nombre, cc.tipo as coleccion_tipo,
                     cc.precio_venta_vendedor,
                     t.nombre as temporada_nombre,
-                    e.nombre as empresa_nombre
+                    e.nombre as empresa_nombre,
+                    g.nombre as gerencia_nombre
              FROM asignaciones_colecciones ac
              LEFT JOIN vendedores v ON ac.vendedor_id = v.id
              LEFT JOIN colecciones_combos cc ON ac.coleccion_combo_id = cc.id
              LEFT JOIN temporadas t ON ac.temporada_id = t.id
              LEFT JOIN empresas e ON cc.empresa_id = e.id
+             LEFT JOIN gerencias g ON ac.gerencia = g.id
              WHERE ac.usuario_id = ?";
         $params = [$this->user];
         $types = 's';
@@ -57,6 +59,7 @@ class AsignacionModel
 
         $fecha_asig    = trim($d['fecha_asignacion'] ?? '');
         $cuotas        = $d['cuotas'] ?? [];
+        $gerencia_id   = !empty($d['gerencia_id']) ? (int)$d['gerencia_id'] : 0;
 
         if (!$vendedor_id || !$temporada_id || !$fecha_asig)
             throw new Exception('Faltan datos obligatorios o son inválidos');
@@ -68,8 +71,8 @@ class AsignacionModel
 
             $stmt = $this->db->prepare(
                 "INSERT INTO asignaciones_colecciones
-                 (vendedor_id, coleccion_combo_id, temporada_id, estado, aplica_premio_especial, fecha_asignacion, usuario_id, costo, ganancia_vendedor, ganancia_gerente)
-                 VALUES (?, ?, ?, 'activa', 0, ?, ?, ?, ?, ?)"
+                 (vendedor_id, coleccion_combo_id, temporada_id, estado, aplica_premio_especial, fecha_asignacion, usuario_id, costo, ganancia_vendedor, ganancia_gerente, gerencia)
+                 VALUES (?, ?, ?, 'activa', 0, ?, ?, ?, ?, ?, NULLIF(?, 0))"
             );
 
             $stmt2 = $this->db->prepare(
@@ -101,7 +104,7 @@ class AsignacionModel
                 $ganancia_gerente = (float)$row['precio_venta_vendedor'] - (float)$row['precio_base'];
 
                 for ($j = 0; $j < $cantidad; $j++) {
-                    $stmt->bind_param('issssddd', $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $this->user, $precio_venta_vendedor, $ganancia_vendedor, $ganancia_gerente);
+                    $stmt->bind_param('issssdddi', $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $this->user, $precio_venta_vendedor, $ganancia_vendedor, $ganancia_gerente, $gerencia_id);
                     if (!$stmt->execute()) {
                         throw new Exception("Error al insertar asignación: " . $stmt->error);
                     }

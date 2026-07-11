@@ -18,6 +18,7 @@ if ($isLoggedIn) {
                 '6aa34a75-50c3-0559-f6f7-39f9b8f233f7',
                 '3dd01d42-2790-7226-c3e4-06f685df00d4',
                 'b308d04e-032a-4fd1-97a8-0e15cf6d850e',
+                '0ea89a45-946d-4993-90b1-84d3e2ad77a1',
                 '5ff23f64-49b2-9448-e5e6-28f8a7f122f6'
             ];
             $flatMenuItems = array_values(array_filter($flatMenuItems, function ($item) use ($hiddenIds) {

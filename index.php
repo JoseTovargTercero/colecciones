@@ -35,6 +35,7 @@ require_once __DIR__ . '/controllers/ArticuloController.php';
 require_once __DIR__ . '/controllers/ArticuloAsignacionController.php';
 require_once __DIR__ . '/controllers/ControlPagosArticuloController.php';
 require_once __DIR__ . '/controllers/CargaPagosArticuloController.php';
+require_once __DIR__ . '/controllers/GerenciaController.php';
 
 
 use App\Core\ViewRenderer;
@@ -102,6 +103,7 @@ $router->group(['middleware' => LoginSuscripcionMiddleware::class], function ($r
     $router->get('/deudas',              ['vista' => 'modules/deudas_view',              'vistaData' => ['titulo' => 'Tus deudas']]);
     $router->get('/dashboard-vendedor',  ['vista' => 'modules/dashboard_vendedor_view',  'vistaData' => ['titulo' => 'Mi Dashboard']]);
     $router->get('/mi-suscripcion',      ['vista' => 'modules/mi_suscripcion_view',      'vistaData' => ['titulo' => 'Mi Suscripción']]);
+    $router->get('/gerencias',           ['vista' => 'modules/gerencias_view',           'vistaData' => ['titulo' => 'Gerencias']]);
 });
 
 // Rutas de suscripción (requieren sesión, NO verifican suscripción para evitar bucle)
@@ -164,6 +166,12 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->post('/temporadas', ['controlador' => TemporadaController::class, 'accion' => 'crear']);
     $router->put('/temporadas/{id}', ['controlador' => TemporadaController::class, 'accion' => 'actualizar']);
     $router->delete('/temporadas/{id}', ['controlador' => TemporadaController::class, 'accion' => 'eliminar']);
+
+    // endpoints de gerencias
+    $router->get('/gerencias', ['controlador' => GerenciaController::class, 'accion' => 'listar']);
+    $router->post('/gerencias', ['controlador' => GerenciaController::class, 'accion' => 'crear']);
+    $router->put('/gerencias/{id}', ['controlador' => GerenciaController::class, 'accion' => 'actualizar']);
+    $router->delete('/gerencias/{id}', ['controlador' => GerenciaController::class, 'accion' => 'eliminar']);
 
     // endpoints de colecciones
     $router->get('/colecciones', ['controlador' => ColeccionController::class, 'accion' => 'listar']);

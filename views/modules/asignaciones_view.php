@@ -77,6 +77,12 @@
                                     </button>
                                 </div>
                             </div>
+                            <div class="mb-3" id="aGerenciaGroup" style="display:none">
+                                <label for="aGerencia" class="form-label">Gerencia</label>
+                                <select class="form-select" id="aGerencia">
+                                    <option value="">Seleccione gerencia (opcional)...</option>
+                                </select>
+                            </div>
                             <div class="text-center mt-4">
                                 <button class="btn btn-primary px-4" onclick="window.a.goStep(2)">
                                     Siguiente <i class="bx bx-chevron-right"></i>
@@ -318,10 +324,12 @@
         apiV: '<?= BASE_URL ?>api/vendedores',
         apiT: '<?= BASE_URL ?>api/temporadas',
         apiC: '<?= BASE_URL ?>api/colecciones',
+        apiG: '<?= BASE_URL ?>api/gerencias',
         BASE: '<?= BASE_URL ?>',
         empresas: [],
         colecciones: [],
         temporadas: [],
+        gerencias: [],
         cuotasCalc: [],
         coleccionesSel: [],
         currentEmpresa: '',
@@ -437,15 +445,22 @@
                 });
             }
 
-            const [re, rv, rt, rc] = await Promise.all([
+            const [re, rv, rt, rc, rg] = await Promise.all([
                 fetch(this.apiE).then(r => r.json()),
                 fetch(this.apiV).then(r => r.json()),
                 fetch(this.apiT).then(r => r.json()),
                 fetch(this.apiC).then(r => r.json()),
+                fetch(this.apiG).then(r => r.json()),
             ]);
             this.empresas = re.data || [];
             this.temporadas = rt.data || [];
             this.colecciones = rc.data || [];
+            this.gerencias = rg.data || [];
+
+            if (this.gerencias.length) {
+                document.getElementById('aGerenciaGroup').style.display = '';
+                this._fillSelect('aGerencia', this.gerencias, g => ({ v: g.id, l: g.nombre }), 'Seleccione gerencia (opcional)...');
+            }
 
             this._fillSelect('aEmpresa', this.empresas, e => ({
                 v: e.id,
@@ -531,6 +546,15 @@
         },
 
         agregarColeccion() {
+            const temporada = document.getElementById('aTemporada').value;
+            const fechaAsig = document.getElementById('aFechaAsig').value;
+            if (!temporada || !fechaAsig) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Complete campaña y fecha de asignación primero'
+                });
+                return;
+            }
             const sel = document.getElementById('aColeccionSel');
             const opt = sel.selectedOptions[0];
             if (!opt || !opt.value) {
@@ -844,6 +868,7 @@
                 })),
                 temporada_id: document.getElementById('aTemporada').value,
                 fecha_asignacion: document.getElementById('aFechaAsig').value,
+                gerencia_id: document.getElementById('aGerencia')?.value || '',
                 cuotas: this.cuotasCalc
             };
 
@@ -1036,6 +1061,7 @@
             document.getElementById('aCalculo').value = 'automatico';
             document.getElementById('aFechaPrimera').value = '';
             document.getElementById('aIntervalo').value = 'quincenal';
+            if (document.getElementById('aGerencia')) document.getElementById('aGerencia').value = '';
 
             this.cuotasCalc = [];
             this.coleccionesSel = [];
