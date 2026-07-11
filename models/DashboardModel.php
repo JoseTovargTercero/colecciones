@@ -168,7 +168,7 @@ class DashboardModel
         $r = $this->db->query(
             "SELECT c.fecha_pago, COUNT(*) as total
              FROM $tableCuotas c
-             INNER JOIN $tableAsignaciones a ON c.asignacion_id = a.id
+             INNER JOIN $tableAsignaciones a ON c.asignacion_id = a.id $empresaJoin
              WHERE $userFilter
                AND a.temporada_id = $tid
                $empresaWhere

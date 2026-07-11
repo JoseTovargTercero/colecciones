@@ -273,7 +273,10 @@
                     </div>
                     <div class="mb-2">
                         <label for="aNVTelefono" class="form-label">Teléfono</label>
-                        <input class="form-control" id="aNVTelefono" placeholder="Teléfono">
+                        <div style="position:relative;display:flex;align-items:center">
+                            <span style="position:absolute;left:0.9rem;font-size:0.9375rem;font-weight:600;color:#1a1f36;pointer-events:none;z-index:2;user-select:none">+58</span>
+                            <input class="form-control" id="aNVTelefono" placeholder="4121234567" maxlength="10" inputmode="numeric" style="padding-left:3.2rem">
+                        </div>
                     </div>
                     <div class="mb-2">
                         <label for="aNVNivel" class="form-label">Nivel</label>
@@ -422,6 +425,18 @@
         },
 
         async init() {
+            const aNVTel = document.getElementById('aNVTelefono');
+            if (aNVTel) {
+                aNVTel.addEventListener('input', function () {
+                    let cleaned = this.value.replace(/\D/g, '');
+                    if (this.value.startsWith('0')) {
+                        Swal.fire({ icon: 'error', title: 'El teléfono no puede comenzar con 0.', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
+                        cleaned = cleaned.replace(/^0+/, '');
+                    }
+                    this.value = cleaned;
+                });
+            }
+
             const [re, rv, rt, rc] = await Promise.all([
                 fetch(this.apiE).then(r => r.json()),
                 fetch(this.apiV).then(r => r.json()),
@@ -590,10 +605,19 @@
 
         async saveNuevoVendedor(e) {
             e.preventDefault();
+            let telefonoRaw = document.getElementById('aNVTelefono').value.replace(/\D/g, '').replace(/^0/, '');
+
+            if (telefonoRaw) {
+                if (!/^\d{10}$/.test(telefonoRaw)) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'El teléfono debe tener exactamente 10 dígitos.' });
+                    return;
+                }
+            }
+
             const body = {
                 nombre: document.getElementById('aNVNombre').value,
                 cedula: document.getElementById('aNVCedula').value,
-                telefono: document.getElementById('aNVTelefono').value,
+                telefono: telefonoRaw ? '+58' + telefonoRaw : '',
                 nivel: document.getElementById('aNVNivel').value
             };
             try {

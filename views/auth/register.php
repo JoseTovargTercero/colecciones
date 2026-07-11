@@ -403,6 +403,21 @@
             border-bottom-color: var(--primary-dark);
         }
 
+        .phone-prefix {
+            position: absolute;
+            left: 2.6rem;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            pointer-events: none;
+            z-index: 2;
+            user-select: none;
+        }
+
+        .field-input.phone-input {
+            padding-left: 4.4rem;
+        }
+
         @media (max-width: 680px) {
             .register-card {
                 grid-template-columns: 1fr;
@@ -468,7 +483,8 @@
                         <label for="telefono" class="field-label">Telefono</label>
                         <div class="input-wrap">
                             <i class="mdi mdi-phone-outline input-icon"></i>
-                            <input class="field-input" type="tel" name="telefono" id="telefono" placeholder="0412-1234567" autocomplete="tel">
+                            <span class="phone-prefix">+58</span>
+                            <input class="field-input phone-input" type="tel" name="telefono" id="telefono" placeholder="4121234567" autocomplete="tel" maxlength="10" inputmode="numeric">
                         </div>
                     </div>
 
