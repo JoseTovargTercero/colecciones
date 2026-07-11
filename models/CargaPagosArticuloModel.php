@@ -25,6 +25,10 @@ class CargaPagosArticuloModel
         $monto_bs       = (float)($d['monto_bs'] ?? 0);
         $tasa_dia       = (float)($d['tasa_dia'] ?? 0);
         $comprobante    = $this->upload();
+        if (!$comprobante && !empty($d['comprobante_existente'])) {
+            $comprobante = $d['comprobante_existente'];
+        }
+        $pendiente_id = !empty($d['pendiente_id']) ? (int)$d['pendiente_id'] : null;
 
         $campos = [[$empresa_id, 'empresa'], [$temporada_id, 'temporada'], [$vendedor_id, 'vendedor'], [$tipo_pago, 'tipo_pago'], [$monto, 'monto']];
 
@@ -79,6 +83,13 @@ class CargaPagosArticuloModel
                 $pagadoATiempo = $this->procesarAbono($empresa_id, $temporada_id, $vendedor_id, $monto, $numero_operacion, $comp_str, $u, $fecha_pago);
             } else {
                 throw new Exception('Tipo de pago no implementado.');
+            }
+
+            if ($pendiente_id) {
+                $del = $this->db->prepare("DELETE FROM comprobantes_pendientes WHERE id = ?");
+                $del->bind_param('i', $pendiente_id);
+                $del->execute();
+                $del->close();
             }
 
             $this->db->commit();

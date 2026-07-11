@@ -121,19 +121,20 @@
 
 <!-- Modal Cargar Pago -->
 <div class="modal fade" id="cpModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" id="cpModalDialog">
+    <div class="modal-dialog modal-dialog-centered modal-xl" id="cpModalDialog">
         <div class="modal-content">
             <form id="cpForm">
                 <input type="hidden" name="empresa_id" id="cpEmpresaId">
                 <input type="hidden" name="temporada_id" id="cpTempId">
                 <input type="hidden" name="vendedor_id" id="cpVendedorId">
+                <input type="hidden" name="pendiente_id" id="cpPendienteId" value="">
                 <div class="modal-header">
                     <h5 class="modal-title">Cargar Pago</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row">
-                        <div class="col-md-12" id="cpFormCol">
+                        <div class="col-md-5" id="cpFormCol">
                             <p><strong>Vendedor:</strong> <span id="cpVendedorLabel"></span></p>
                             <p><strong>Deuda total:</strong> <span id="cpDeudaTotal">$0.00</span></p>
                             <hr>
@@ -178,6 +179,11 @@
                             <div class="mb-3">
                                 <label for="cpComprobante" class="form-label">Comprobante (imagen)</label>
                                 <input type="file" class="form-control" id="cpComprobante" name="comprobante" accept="image/*">
+                                <div id="cpCompExistente" class="mt-2" style="display:none">
+                                    <small class="text-muted">Comprobante existente:</small>
+                                    <a href="#" onclick="event.preventDefault();window.open(this.querySelector('img').src)"><img id="cpCompExistenteImg" src="" class="img-thumbnail mt-1" style="max-height:80px;object-fit:contain;cursor:pointer"></a>
+                                    <input type="hidden" id="cpCompExistenteHf" name="comprobante_existente" value="">
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-7" id="cpAbonoPreview" style="display:none">
@@ -456,6 +462,29 @@
     </div>
 </div>
 
+<!-- Modal Pagos Pendientes -->
+<div class="modal fade" id="cpPendModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:12px;border:none;box-shadow:0 8px 32px rgba(0,0,0,0.12)">
+            <div class="modal-header" style="background:#696cff;border-radius:12px 12px 0 0;border:none;padding:1rem 1.25rem">
+                <h5 class="modal-title fw-bold text-white" style="font-size:1.05rem">
+                    <i class="bx bx-time me-2"></i>Pagos Pendientes
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" id="cpPendBody">
+                <div class="text-center py-5 text-muted">
+                    <div class="spinner-border text-primary mb-2" role="status"></div>
+                    <div class="small">Cargando...</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 px-3 pb-3">
+                <button type="button" class="btn btn-light shadow-sm" data-bs-dismiss="modal" style="border-radius:8px">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     #aTabla th:nth-child(1),
     #aTabla td:nth-child(1) {
@@ -712,6 +741,7 @@
     let _agrupado = true;
     let _diasRetraso = 3;
     let _cpCuotas = [];
+    let _cpPendPreFill = null;
     let _historialData = [];
 
     const badgeMap = {
@@ -781,20 +811,26 @@
     function renderizar(filas) {
         const thead = document.getElementById('aTablaHead');
         const tbody = document.getElementById('aTablaBody');
-        const colsExtra = _agrupado ? 2 : 3;
+        const colsExtra = _agrupado ? 3 : 3;
         const remIdx = remarcarIdx();
         const isMobile = window.innerWidth <= 768;
 
         const stickCls = isMobile ? '' : 'position:sticky;left:0;z-index:3;background:#fff';
-        const stickCls2 = isMobile ? '' : 'position:sticky;left:200px;z-index:3;background:#fff';
+        const pendLeft = 200;
+        const dotsLeft = _agrupado ? 250 : 200;
+        const stickPend = isMobile ? '' : `position:sticky;left:${pendLeft}px;z-index:3;background:#fff`;
+        const stickDots = isMobile ? '' : `position:sticky;left:${dotsLeft}px;z-index:3;background:#fff`;
         const vw = isMobile ? 'min-width:120px' : 'min-width:200px';
-        let headerHtml = `<th style="${stickCls};${vw}">Vendedor</th>
-        <th style="${stickCls2};width:40px"></th>`;
+        let headerHtml = `<th style="${stickCls};${vw}">Vendedor</th>`;
+        if (_agrupado) {
+            headerHtml += `<th style="${stickPend};width:50px" class="text-center"><small>Pend.</small></th>`;
+        }
+        headerHtml += `<th style="${stickDots};width:40px"></th>`;
         const tipo = tipoActual();
         if (!_agrupado) {
             headerHtml += `<th style="min-width:140px">${tipo === 'articulos' ? 'Artículos' : 'Colección'}</th>`;
         }
-        headerHtml += `<th style="min-width:80px">Monto</th>`;
+        headerHtml += `<th style="min-width:80px;display:none">Monto</th>`;
         _fechas.forEach((f, i) => {
             const [y, m, d] = f.split('-');
             const label = `${parseInt(m)}/${parseInt(d)}<br><small class="text-muted">${y}</small>`;
@@ -816,10 +852,22 @@
             const dots = `<button class="btn btn-sm btn-outline-secondary a-dd-btn" onclick="event.stopPropagation();abrirMenu(this,${r.vendedor_id})">⋮</button>`;
             const isMobile = window.innerWidth <= 768;
             const cellStick = isMobile ? '' : 'position:sticky;left:0;background:#fff';
-            const cellStick2 = isMobile ? '' : 'position:sticky;left:200px;background:#fff;';
+            const cellPend = isMobile ? '' : `position:sticky;left:${pendLeft}px;background:#fff;`;
+            const cellDots = isMobile ? '' : `position:sticky;left:${dotsLeft}px;background:#fff;`;
 
-            let cells = `<td style="${cellStick}"><strong>${r.vendedor_nombre}</strong><br><small class="text-muted">${r.vendedor_cedula || ''}</small></td>
-            <td style="${cellStick2};text-align:center">${dots}</td>`;
+            const tienePend = _agrupado ? (r.cuotas || []).some(c => c.tiene_pendiente) : false;
+            let cells = `<td style="${cellStick}"><strong>${r.vendedor_nombre}</strong><br><small class="text-muted">${r.vendedor_cedula || ''}</small></td>`;
+            if (_agrupado) {
+                const pendCuotas = (r.cuotas || []).filter(c => c.tiene_pendiente);
+                const pendData = encodeURIComponent(JSON.stringify({
+                    vendedor_id: r.vendedor_id,
+                    vendedor: r.vendedor_nombre,
+                    cedula: r.vendedor_cedula,
+                    cuotas: pendCuotas
+                }));
+                cells += `<td style="${cellPend};text-align:center;vertical-align:middle">${tienePend ? `<span class="badge bg-warning text-dark" style="font-size:.6rem;cursor:pointer" onclick="abrirPendModal('${pendData}')">REVISAR PAGO!</span>` : ''}</td>`;
+            }
+            cells += `<td style="${cellDots};text-align:center">${dots}</td>`;
             if (!_agrupado) {
                 const tipo = tipoActual();
                 if (tipo === 'articulos') {
@@ -828,8 +876,11 @@
                     cells += `<td>${r.coleccion_nombre || ''}<br><small class="text-muted">${r.coleccion_tipo || ''}</small></td>`;
                 }
             }
-            const monto = r.monto || r.monto_total || r.precio_venta_vendedor || 0;
-            cells += `<td>$${parseFloat(monto).toFixed(2)}</td>`;
+            const unpaid = (r.cuotas || []).filter(c => c.estatus_pago !== 'realizado');
+            const raw = unpaid.reduce((s, c) => s + parseFloat(c.monto_pendiente || c.monto_a_pagar || 0), 0);
+            const gv = unpaid.length > 0 ? parseFloat(r.ganancia_vendedor || 0) : 0;
+            const monto = Math.max(0, raw - gv) || 0;
+            cells += `<td style="display:none">$${parseFloat(monto).toFixed(2)}</td>`;
 
             _fechas.forEach(f => {
                 const c = cuotasMap[f];
@@ -855,8 +906,11 @@
                     cuotas: [],
                 };
             }
-            grupos[key].monto += parseFloat(r.monto || r.precio_venta_vendedor || 0);
             (r.cuotas || []).forEach(c => grupos[key].cuotas.push(c));
+            const unpaid = (r.cuotas || []).filter(c => c.estatus_pago !== 'realizado');
+            const raw = unpaid.reduce((s, c) => s + parseFloat(c.monto_pendiente || c.monto_a_pagar || 0), 0);
+            const gv = unpaid.length > 0 ? parseFloat(r.ganancia_vendedor || 0) : 0;
+            grupos[key].monto += Math.max(0, raw - gv);
         });
         return Object.values(grupos);
     }
@@ -1122,18 +1176,20 @@
 
     // ============ Cargar Pago ============
 
-    function abrirPago(btn, vendedorId) {
+    function abrirPago(btn, vendedorId, vendedorNombre) {
         const tipo = tipoActual();
         const endpoints = ep(tipo);
         const empresaId = document.getElementById('empresa').value;
         const tempId = document.getElementById('campaniaSelect').value;
-        const vendedorNombre = btn.closest('tr').querySelector('td:nth-child(1)').textContent.trim().split('\n')[0];
+        if (!vendedorNombre) {
+            vendedorNombre = btn ? btn.closest('tr').querySelector('td:nth-child(1)').textContent.trim().split('\n')[0] : '';
+        }
 
         document.getElementById('cpVendedorId').value = vendedorId;
         document.getElementById('cpEmpresaId').value = empresaId;
         document.getElementById('cpTempId').value = tempId;
         document.getElementById('cpVendedorLabel').textContent = vendedorNombre;
-        document.getElementById('cpTipoPago').value = '';
+        document.getElementById('cpTipoPago').value = 'abono';
         document.getElementById('cpMonto').value = '';
         document.getElementById('cpMontoBs').value = '';
         document.getElementById('cpTasaBcv').value = '<?= htmlspecialchars($_SESSION['bcv_valor'] ?? '', ENT_QUOTES) ?>';
@@ -1143,8 +1199,6 @@
         document.getElementById('cpFechaPago').value = '';
         document.getElementById('cpCuotaGroup').style.display = 'none';
         document.getElementById('cpAbonoPreview').style.display = 'none';
-        document.getElementById('cpFormCol').className = 'col-md-12';
-        document.getElementById('cpModalDialog').classList.remove('modal-xl');
         document.getElementById('cpMontoLabel').textContent = 'Monto pagado (USD)';
 
         fetch(`${endpoints.cargaCuotas}?empresa_id=${empresaId}&temporada_id=${tempId}&vendedor_id=${vendedorId}`)
@@ -1167,6 +1221,30 @@
                 });
 
                 new bootstrap.Modal(document.getElementById('cpModal')).show();
+
+                if (_cpPendPreFill) {
+                    const pf = _cpPendPreFill;
+                    document.getElementById('cpMontoBs').value = pf.monto_bs || '';
+                    document.getElementById('cpTasaBcv').value = pf.tasa_dia || '';
+                    document.getElementById('cpNumOp').value = pf.numero_operacion || '';
+                    document.getElementById('cpFechaPago').value = pf.fecha || '';
+                    if (pf.monto_bs && pf.tasa_dia) actualizarUsdDesdeBs();
+                    const imgGroup = document.getElementById('cpCompExistente');
+                    const img = document.getElementById('cpCompExistenteImg');
+                    const hf = document.getElementById('cpCompExistenteHf');
+                    const hfPend = document.getElementById('cpPendienteId');
+                    if (pf.comprobante && imgGroup) {
+                        imgGroup.style.display = '';
+                        img.src = BASE + pf.comprobante;
+                        hf.value = pf.comprobante;
+                    } else if (imgGroup) {
+                        imgGroup.style.display = 'none';
+                        img.src = '';
+                        hf.value = '';
+                    }
+                    if (hfPend) hfPend.value = pf.pendiente_id || '';
+                    _cpPendPreFill = null;
+                }
             });
     }
 
@@ -1196,6 +1274,248 @@
     document.getElementById('cpTasaBcv')?.addEventListener('blur', function() {
         if (!this.value) this.setAttribute('disabled', '');
     });
+
+    // ============ Pagos Pendientes Modal ============
+
+    let _cpPendData = null;
+
+    window.abrirPendModal = function(encoded) {
+        _cpPendData = JSON.parse(decodeURIComponent(encoded));
+        renderPendList();
+    };
+
+    function renderPendList() {
+        const data = _cpPendData;
+        if (!data) return;
+        const body = document.getElementById('cpPendBody');
+        const modalEl = document.getElementById('cpPendModal');
+        const dialog = modalEl.querySelector('.modal-dialog');
+        dialog.classList.remove('modal-lg');
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+
+        let html = `<div class="px-3 pt-3 pb-2 border-bottom" style="background:#fafafa">
+            <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center justify-content-center rounded-circle" style="width:36px;height:36px;background:#696cff;color:#fff;font-size:1rem">
+                    <i class="bx bx-user"></i>
+                </div>
+                <div>
+                    <div class="fw-semibold" style="font-size:.9rem">${data.vendedor}</div>
+                    <div class="small text-muted">${data.cedula || '—'}</div>
+                </div>
+                <div class="ms-auto">
+                    <span class="badge bg-warning text-dark px-3 py-2">${data.cuotas.length} pendiente${data.cuotas.length !== 1 ? 's' : ''}</span>
+                </div>
+            </div>
+        </div>`;
+
+        if (!data.cuotas.length) {
+            html += `<div class="text-center py-4 text-muted small">Sin pagos pendientes.</div>`;
+        } else {
+            html += `<div class="p-3" style="max-height:400px;overflow-y:auto">`;
+            data.cuotas.forEach(c => {
+                const p = c.pendiente || {};
+                const monto = parseFloat(p.monto || c.monto_a_pagar || 0).toFixed(2);
+                const montoBs = parseFloat(p.monto_bs || 0).toFixed(2);
+                const tasaDia = parseFloat(p.tasa_dia || 0).toFixed(2);
+                const fechaPago = c.fecha_pago || '—';
+                const fechaPend = p.fecha || '—';
+                const op = p.numero_operacion || '—';
+                const hasComp = p.comprobante ? true : false;
+                const compPath = p.comprobante || '';
+
+                html += `<div class="card mb-2 border" style="border-radius:8px;overflow:hidden">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="badge bg-secondary" style="font-size:.7rem">Cuota #${c.numero_cuota || '?'}</span>
+                            <small class="text-muted">${c.coleccion_nombre || ''} <span class="badge bg-light text-muted fw-normal" style="font-size:.6rem">${c.coleccion_tipo || ''}</span></small>
+                        </div>
+                        <div class="row g-2 small">
+                            <div class="col-6">
+                                <span class="text-muted">Monto USD</span>
+                                <div class="fw-semibold">$${monto}</div>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted">Monto Bs.</span>
+                                <div class="fw-semibold">${montoBs > 0 ? 'Bs.' + montoBs : '—'}</div>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted">Tasa del día</span>
+                                <div class="fw-semibold">${tasaDia > 0 ? tasaDia : '—'}</div>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted">N° Operación</span>
+                                <div class="fw-semibold">${op}</div>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted">Vence</span>
+                                <div class="fw-semibold">${c.fecha_vencimiento || '—'}</div>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted">Registrado</span>
+                                <div class="fw-semibold">${fechaPend}</div>
+                            </div>
+                        </div>`;
+                const pendId = c.pendiente ? c.pendiente.id : null;
+                const pendForBtn = c.pendiente ? encodeURIComponent(JSON.stringify(c.pendiente)) : '';
+                html += `<div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center">
+                    <div>${pendId ? `<button class="btn btn-sm btn-outline-danger py-1 px-2" style="font-size:.75rem;border-radius:6px" onclick="mostrarRechazo(this, ${pendId})">
+                        <i class="bx bx-x-circle me-1"></i>Rechazar
+                    </button>` : ''}</div>
+                    <div class="d-flex gap-1">
+                        ${pendForBtn ? `<button class="btn btn-sm btn-outline-success py-1 px-2" style="font-size:.75rem;border-radius:6px" onclick="cargarPagoPend('${pendForBtn}')">
+                            <i class="bx bx-dollar-circle me-1"></i>Cargar pago
+                        </button>` : ''}
+                        ${hasComp ? `<button class="btn btn-sm btn-outline-primary py-1 px-2" style="font-size:.75rem;border-radius:6px" onclick="verPendImagen('${compPath}')">
+                            <i class="bx bx-file me-1"></i>Ver comprobante
+                        </button>` : ''}
+                    </div>
+                </div>
+                <div class="rechazo-box mt-2" style="display:none">
+                    <textarea class="form-control form-control-sm" rows="2" placeholder="Motivo del rechazo (opcional)" style="font-size:.8rem;border-radius:6px"></textarea>
+                    <div class="d-flex gap-2 mt-2">
+                        <button class="btn btn-sm btn-danger py-1 px-3" style="font-size:.75rem;border-radius:6px" onclick="confirmarRechazo(this, ${pendId})"><i class="bx bx-check me-1"></i>Confirmar</button>
+                        <button class="btn btn-sm btn-outline-secondary py-1 px-3" style="font-size:.75rem;border-radius:6px" onclick="cancelarRechazo(this)">Cancelar</button>
+                    </div>
+                </div>`;
+                html += `</div></div>`;
+            });
+            html += `</div>`;
+        }
+
+        body.innerHTML = html;
+        modal.show();
+    }
+
+    function mostrarRechazo(btn, pendienteId) {
+        const box = btn.closest('.card-body').querySelector('.rechazo-box');
+        if (box) box.style.display = '';
+    }
+
+    function cancelarRechazo(btn) {
+        const box = btn.closest('.rechazo-box');
+        if (box) {
+            box.querySelector('textarea').value = '';
+            box.style.display = 'none';
+        }
+    }
+
+    function confirmarRechazo(btn, pendienteId) {
+        const box = btn.closest('.rechazo-box');
+        const motivo = box ? box.querySelector('textarea').value.trim() : '';
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Rechazando...';
+
+        const fd = new FormData();
+        fd.append('pendiente_id', pendienteId);
+        fd.append('motivo', motivo);
+
+        fetch(BASE + 'api/control-pagos/rechazar-pendiente', {
+                method: 'POST',
+                body: fd
+            })
+            .then(r => r.json())
+            .then(json => {
+                if (json.value) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Rechazado',
+                        text: json.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    bootstrap.Modal.getInstance(document.getElementById('cpPendModal')).hide();
+                    cargarTabla();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: json.message
+                    });
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bx bx-check me-1"></i>Confirmar';
+                }
+            })
+            .catch(() => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error de conexión.'
+                });
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bx bx-check me-1"></i>Confirmar';
+            });
+    }
+
+    window.verPendImagen = function(compPath) {
+        const body = document.getElementById('cpPendBody');
+        const dialog = document.getElementById('cpPendModal').querySelector('.modal-dialog');
+        dialog.classList.add('modal-lg');
+
+        body.innerHTML = `<div class="p-3">
+            <div class="d-flex align-items-center mb-3">
+                <button class="btn btn-sm btn-outline-secondary" onclick="volverPendList()" style="border-radius:6px">
+                    <i class="bx bx-arrow-back me-1"></i>Volver
+                </button>
+            </div>
+            <div class="text-center">
+                <img id="cpPendImg" src="${BASE}${compPath}" style="max-width:100%;max-height:450px;display:inline-block" class="img-fluid rounded border">
+            </div>
+            <div class="text-center mt-2">
+                <small class="text-muted"><i class="bx bx-move me-1"></i>Desplaza el cursor sobre la imagen para ampliar</small>
+            </div>
+        </div>`;
+
+        const img = document.getElementById('cpPendImg');
+        img.addEventListener('load', function() {
+            if (typeof jQuery !== 'undefined' && typeof jQuery.fn.blowup !== 'undefined') {
+                $('#cpPendImg').blowup({
+                    round: true,
+                    width: 200,
+                    height: 200,
+                    border: '3px solid #696cff',
+                    shadow: '0 4px 16px rgba(0,0,0,0.15)',
+                    background: '#fff',
+                    cursor: true,
+                    scale: 1.5,
+                    zIndex: 999999
+                });
+            }
+        });
+        if (img.complete && typeof jQuery !== 'undefined' && typeof jQuery.fn.blowup !== 'undefined') {
+            $('#cpPendImg').blowup({
+                round: true,
+                width: 200,
+                height: 200,
+                border: '3px solid #696cff',
+                shadow: '0 4px 16px rgba(0,0,0,0.15)',
+                background: '#fff',
+                cursor: true,
+                scale: 1.5,
+                zIndex: 999999
+            });
+        }
+    };
+
+    window.volverPendList = function() {
+        renderPendList();
+    };
+
+    window.cargarPagoPend = function(encoded) {
+        const d = JSON.parse(decodeURIComponent(encoded));
+        const vendedorId = _cpPendData ? _cpPendData.vendedor_id : 0;
+        const vendedorNombre = _cpPendData ? _cpPendData.vendedor : '';
+        bootstrap.Modal.getInstance(document.getElementById('cpPendModal')).hide();
+        _cpVendorActivo = vendedorId;
+        _cpPendPreFill = {
+            pendiente_id: d.id || '',
+            monto_bs: d.monto_bs || '',
+            tasa_dia: d.tasa_dia || '',
+            numero_operacion: d.numero_operacion || '',
+            fecha: d.fecha || '',
+            comprobante: d.comprobante || '',
+        };
+        abrirPago(null, vendedorId, vendedorNombre);
+    };
 
     // ============ Estatus de Deuda ============
 
@@ -1480,29 +1800,7 @@
         </tr>`;
     }
 
-    document.getElementById('cpTipoPago').addEventListener('change', function() {
-        const val = this.value;
-        const dialog = document.getElementById('cpModalDialog');
-        const formCol = document.getElementById('cpFormCol');
-        const preview = document.getElementById('cpAbonoPreview');
 
-        document.getElementById('cpCuotaGroup').style.display = val === 'cuota_exacta' ? '' : 'none';
-        if (val === 'total') {
-            document.getElementById('cpMontoLabel').textContent = 'Monto pagado (USD) — Deuda total: ';
-        } else {
-            document.getElementById('cpMontoLabel').textContent = 'Monto pagado (USD)';
-        }
-        if (val === 'abono') {
-            dialog.classList.add('modal-xl');
-            formCol.className = 'col-md-5';
-            preview.style.display = '';
-            simularAbonoPreview(parseFloat(document.getElementById('cpMonto').value));
-        } else {
-            dialog.classList.remove('modal-xl');
-            formCol.className = 'col-md-12';
-            preview.style.display = 'none';
-        }
-    });
 
     document.getElementById('cpMonto').addEventListener('input', function() {
         if (document.getElementById('cpTipoPago').value === 'abono') {
@@ -1748,3 +2046,6 @@
         }
     });
 </script>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blowup@1.0.2/blowup.min.js"></script>

@@ -281,7 +281,7 @@ class NotificationModel
      */
     public function crear(array $data): string
     {
-        $req = ['template_key', 'route', 'module', 'rol', 'user_id'];
+        $req = ['template_key', 'route', 'module', 'user_id'];
         foreach ($req as $k) {
             if (empty($data[$k])) {
                 throw new InvalidArgumentException("Falta campo requerido: {$k}");
@@ -307,6 +307,7 @@ class NotificationModel
                 throw new mysqli_sql_exception("Error al preparar inserción: " . $this->db->error);
             }
 
+            $rolVal = $data['rol'] ?? '';
             $stmt->bind_param(
                 'sssssssss',
                 $uuid,
@@ -314,7 +315,7 @@ class NotificationModel
                 $paramsJ,
                 $data['route'],
                 $data['module'],
-                $data['rol'],
+                $rolVal,
                 $data['user_id'],
                 $now,
                 $actorId

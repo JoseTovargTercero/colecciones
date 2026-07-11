@@ -147,25 +147,50 @@ class CargaPagosController
                 }
             }
 
-            // Obtener gerente_id del vendedor
+            // Obtener gerente_id y nombre del vendedor
             $gerente_id = null;
-            $stmtG = $this->m->getDb()->prepare("SELECT usuario_id FROM vendedores WHERE id = ?");
+            $vendedorNombre = null;
+            $stmtG = $this->m->getDb()->prepare("SELECT usuario_id, nombre FROM vendedores WHERE id = ?");
             $stmtG->bind_param('i', $vendedor_id);
             $stmtG->execute();
             $rG = $stmtG->get_result();
             if ($rowG = $rG->fetch_assoc()) {
                 $gerente_id = $rowG['usuario_id'];
+                $vendedorNombre = $rowG['nombre'];
             }
             $stmtG->close();
 
+            $usuario_id = $_SESSION['user_id'] ?? '';
+
             $stmt = $this->m->getDb()->prepare(
-                "INSERT INTO comprobantes_pendientes (empresa_id, temporada_id, vendedor_id, cuota_id, monto, numero_operacion, comprobante, fecha_pago_comprobante, monto_bs, tasa_dia, status, gerente_id)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?)"
+                "INSERT INTO comprobantes_pendientes (empresa_id, temporada_id, vendedor_id, cuota_id, monto, numero_operacion, comprobante, fecha_pago_comprobante, monto_bs, tasa_dia, status, gerente_id, usuario_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?)"
             );
-            $stmt->bind_param('isssssssdsi', $empresa_id, $temporada_id, $vendedor_id, $cuota_id, $monto, $numero_operacion, $comprobante, $fecha_pago, $monto_bs, $tasa_dia, $gerente_id);
+            $stmt->bind_param('isssssssdsss', $empresa_id, $temporada_id, $vendedor_id, $cuota_id, $monto, $numero_operacion, $comprobante, $fecha_pago, $monto_bs, $tasa_dia, $gerente_id, $usuario_id);
             $stmt->execute();
             $id = $this->m->getDb()->insert_id;
             $stmt->close();
+
+            // Notificar al gerente
+            if ($gerente_id) {
+                try {
+                    require_once __DIR__ . '/../models/NotificationModel.php';
+                    $notif = new NotificationModel();
+                    $notif->crear([
+                        'template_key' => 'pago_recibido_datos',
+                        'template_params' => [
+                            'emisor_nombre' => $vendedorNombre ?? 'Un vendedor',
+                            'monto' => number_format($monto, 2),
+                        ],
+                        'route' => '/control_pagos',
+                        'module' => 'control_pagos',
+                        'rol' => null,
+                        'user_id' => $gerente_id,
+                    ]);
+                } catch (\Throwable $e) {
+                    error_log("Error notificando gerente {$gerente_id}: " . $e->getMessage());
+                }
+            }
 
             $this->res(true, 'Solicitud de pago registrada. Pendiente de aprobaci\u00f3n.', ['id' => $id], 201);
         } catch (Throwable $e) {

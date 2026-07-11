@@ -14,7 +14,7 @@
                 <div class="icon-wrap"><i class="bx bx-info-circle"></i></div>
                 <div class="info-text" style="font-size: 15px;">
                     El botón <span class="badge-solicitar">SOLICITAR PAGO <img src="<?= BASE_URL ?>/public/assets/images/logo-cd.svg" alt="Logo" width="15" height="15"></span> solo se muestra cuando el vendedor está registrado en la plataforma y tiene cuentas por pagar.
-                    Invita a tus vendedores a registrarse para que puedas <strong>solicitar y recibir pagos, validar transacciones y gestionar sus solicitudes de premios, todo directamente desde la aplicación.</strong>
+                    Invita a tus vendedores a registrarse para que puedas <strong>solicitar y recibir pagos, validar transacciones todo directamente desde la aplicación.</strong>
                 </div>
             </div>
             <div id="vTablaToolbar" class="d-flex align-items-center gap-2 py-1">
@@ -273,6 +273,52 @@
             });
             $('#vTabla').bootstrapTable('refresh');
         },
+        async solictar_pago(x) {
+            const result = await Swal.fire({
+                icon: 'question',
+                title: 'Solicitar pago',
+                text: `¿Notificar a ${x.nombre} sobre su deuda de $${parseFloat(x.total_deuda).toFixed(2)}?`,
+                showCancelButton: true,
+                confirmButtonText: 'Sí, notificar',
+                cancelButtonText: 'Cancelar'
+            });
+            if (!result.isConfirmed) return;
+            try {
+                const res = await fetch(this.api + '/solicitar-pago', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        vendedor_id: x.id,
+                        telefono: x.telefono,
+                        vendedor_nombre: x.nombre,
+                        monto: x.total_deuda
+                    })
+                });
+                const json = await res.json();
+                if (json.value) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Notificación enviada',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: json.message
+                    });
+                }
+            } catch (e) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al enviar notificación.'
+                });
+            }
+        },
         async detalles(id) {
             document.getElementById('vDetLoading').style.display = '';
             document.getElementById('vDetContent').style.display = 'none';
@@ -351,10 +397,18 @@
         async init() {
             const vTel = document.getElementById('vTelefono');
             if (vTel) {
-                vTel.addEventListener('input', function () {
+                vTel.addEventListener('input', function() {
                     let cleaned = this.value.replace(/\D/g, '');
                     if (this.value.startsWith('0')) {
-                        Swal.fire({ icon: 'error', title: 'El teléfono no puede comenzar con 0.', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'El teléfono no puede comenzar con 0.',
+                            toast: true,
+                            position: 'bottom-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
                         cleaned = cleaned.replace(/^0+/, '');
                     }
                     this.value = cleaned;

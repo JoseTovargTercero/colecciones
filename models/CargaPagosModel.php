@@ -30,7 +30,10 @@ class CargaPagosModel
         $monto_bs       = (float)($d['monto_bs'] ?? 0);
         $tasa_dia       = (float)($d['tasa_dia'] ?? 0);
         $comprobante    = $this->upload();
-
+        if (!$comprobante && !empty($d['comprobante_existente'])) {
+            $comprobante = $d['comprobante_existente'];
+        }
+        $pendiente_id = !empty($d['pendiente_id']) ? (int)$d['pendiente_id'] : null;
 
         $campos = [[$empresa_id, 'empresa'], [$temporada_id, 'temporada'], [$vendedor_id, 'vendedor'], [$tipo_pago, 'tipo_pago'], [$monto, 'monto']];
 
@@ -92,6 +95,13 @@ class CargaPagosModel
                 $pagadoATiempo = $this->procesarAbono($empresa_id, $temporada_id, $vendedor_id, $monto, $numero_operacion, $comp_str, $u, $fecha_pago);
             } else {
                 throw new Exception('Tipo de pago no implementado.');
+            }
+
+            if ($pendiente_id) {
+                $del = $this->db->prepare("DELETE FROM comprobantes_pendientes WHERE id = ?");
+                $del->bind_param('i', $pendiente_id);
+                $del->execute();
+                $del->close();
             }
 
             $this->db->commit();
@@ -654,22 +664,13 @@ class CargaPagosModel
 
     public function obtenerPremiosVendedor(int $empresa_id, string $temporada_id, int $vendedor_id): array
     {
-        // Prevenir error si la tabla no ha sido creada aÃºn
-        $this->db->query("CREATE TABLE IF NOT EXISTS premios_solicitados (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            vendedor_id INT NOT NULL,
-            empresa_id INT NOT NULL,
-            temporada_id INT NOT NULL,
-            premio_id INT NOT NULL,
-            status VARCHAR(50) DEFAULT 'pendiente',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )");
+
 
         $stmt = $this->db->prepare(
             "SELECT ps.id, ps.status, ps.created_at, p.nombre, p.valor
              FROM premios_solicitados ps
              INNER JOIN premios p ON ps.premio_id = p.id
-             WHERE ps.empresa_id = ? AND ps.temporada_id = ? AND ps.vendedor_id = ?
+             WHERE ps.empresa_id = ? AND ps.temporada_id = ? AND ps.vendedor_id = ? AND status = 'pendiente'
              ORDER BY ps.created_at DESC"
         );
         $stmt->bind_param('isi', $empresa_id, $temporada_id, $vendedor_id);

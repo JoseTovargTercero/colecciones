@@ -28,13 +28,24 @@ class ControlPagosModel
                        c.fecha_pago,
                        c.fecha_vencimiento,
                        c.estatus_pago,
-                       c.monto_a_pagar,
-                       e.dias_retraso_permitido
+                        c.monto_a_pagar,
+                        c.monto_pendiente,
+                        ac.ganancia_vendedor,
+                        e.dias_retraso_permitido,
+                       cp.id as pendiente_id,
+                       cp.monto as pendiente_monto,
+                       cp.numero_operacion as pendiente_operacion,
+                       cp.comprobante as pendiente_comprobante,
+                       cp.fecha_pago_comprobante as pendiente_fecha,
+                       cp.monto_bs as pendiente_monto_bs,
+                       cp.tasa_dia as pendiente_tasa_dia,
+                       cp.usuario_id as pendiente_usuario_id
                 FROM asignaciones_colecciones ac
                 INNER JOIN vendedores v ON ac.vendedor_id = v.id
                 INNER JOIN colecciones_combos cc ON ac.coleccion_combo_id = cc.id
                 INNER JOIN cuotas_coleccion c ON c.asignacion_id = ac.id
                 INNER JOIN empresas e ON cc.empresa_id = e.id
+                LEFT JOIN comprobantes_pendientes cp ON c.id = cp.cuota_id AND cp.status = 'pendiente'
                 WHERE ac.estado = 'activa'
                   AND cc.empresa_id = ?
                   AND ac.temporada_id = ?
@@ -63,7 +74,9 @@ class ControlPagosModel
                     'coleccion_tipo'        => $row['coleccion_tipo'],
                     'fecha_asignacion'      => $row['fecha_asignacion'],
                     'precio_venta_vendedor' => $row['precio_venta_vendedor'],
+                    'ganancia_vendedor'     => (float)($row['ganancia_vendedor'] ?? 0),
                     'cuotas'                => [],
+                    'num_pendientes'        => 0,
                 ];
             }
 
@@ -72,13 +85,32 @@ class ControlPagosModel
                 $cuotasFechas[] = $fechaPago;
             }
 
+            $pendienteData = $row['pendiente_id'] !== null ? [
+                'id' => (int)$row['pendiente_id'],
+                'monto' => (float)($row['pendiente_monto'] ?? 0),
+                'numero_operacion' => $row['pendiente_operacion'] ?? '',
+                'comprobante' => $row['pendiente_comprobante'] ?? '',
+                'fecha' => $row['pendiente_fecha'] ?? '',
+                'monto_bs' => (float)($row['pendiente_monto_bs'] ?? 0),
+                'tasa_dia' => (float)($row['pendiente_tasa_dia'] ?? 0),
+                'usuario_id' => $row['pendiente_usuario_id'] ? (int)$row['pendiente_usuario_id'] : null,
+            ] : null;
+
             $asignaciones[$key]['cuotas'][] = [
                 'fecha_pago'        => $fechaPago,
                 'fecha_vencimiento' => $row['fecha_vencimiento'],
                 'estatus_pago'      => $row['estatus_pago'],
                 'monto_a_pagar'     => $row['monto_a_pagar'],
-                'cuota_id'          => $row['cuota_id'],
+                'monto_pendiente'   => (float)($row['monto_pendiente'] ?? 0),
+                'cuota_id'          => (int)$row['cuota_id'],
+                'numero_cuota'      => (int)$row['numero_cuota'],
+                'coleccion_nombre'  => $row['coleccion_nombre'],
+                'coleccion_tipo'    => $row['coleccion_tipo'],
+                'tiene_pendiente'   => $row['pendiente_id'] !== null,
+                'pendiente'         => $pendienteData,
             ];
+
+            $asignaciones[$key]['num_pendientes'] = ($asignaciones[$key]['num_pendientes'] ?? 0) + ($row['pendiente_id'] !== null ? 1 : 0);
 
             if (!isset($diasRetraso)) {
                 $diasRetraso = (int)($row['dias_retraso_permitido'] ?? 3);
@@ -287,5 +319,39 @@ class ControlPagosModel
             $this->db->rollback();
             throw $e;
         }
+    }
+
+    public function rechazarPendiente(int $pendiente_id): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT cp.id, cp.monto, cp.usuario_id, cp.comprobante
+             FROM comprobantes_pendientes cp
+             WHERE cp.id = ?"
+        );
+        $stmt->bind_param('i', $pendiente_id);
+        $stmt->execute();
+        $r = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$r) {
+            throw new \Exception('Pendiente no encontrado.');
+        }
+
+        $stmt = $this->db->prepare("DELETE FROM comprobantes_pendientes WHERE id = ?");
+        $stmt->bind_param('i', $pendiente_id);
+        $stmt->execute();
+        $stmt->close();
+
+        if (!empty($r['comprobante'])) {
+            $path = APP_ROOT . $r['comprobante'];
+            if (file_exists($path)) {
+                unlink($path);
+            }
+        }
+
+        return [
+            'usuario_id' => $r['usuario_id'],
+            'monto'      => (float)$r['monto'],
+        ];
     }
 }

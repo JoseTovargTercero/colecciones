@@ -138,6 +138,16 @@ class VendedorModel
         ];
     }
 
+    public function findSystemUserByPhone(string $telefono): ?string
+    {
+        $stmt = $this->db->prepare("SELECT user_id FROM system_users WHERE telefono = ? AND deleted_at IS NULL LIMIT 1");
+        $stmt->bind_param('s', $telefono);
+        $stmt->execute();
+        $r = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        return $r ? $r['user_id'] : null;
+    }
+
     public function obtenerDetalles(int $id): ?array
     {
         $u = $_SESSION['user_id'] ?? '';

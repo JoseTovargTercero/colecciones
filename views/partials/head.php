@@ -34,6 +34,7 @@
 
 <script>
     const BASE_URL = "<?= BASE_URL ?>";
+    window.baseUrl = "<?= BASE_URL ?>";
 </script>
 
 <!-- sweetalert2 -->

@@ -196,6 +196,7 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->get('/vendedores/buscar', ['controlador' => VendedorController::class, 'accion' => 'buscarPorCedula']);
     $router->get('/vendedores/{id}/detalles', ['controlador' => VendedorController::class, 'accion' => 'detalles']);
     $router->post('/vendedores', ['controlador' => VendedorController::class, 'accion' => 'crear']);
+    $router->post('/vendedores/solicitar-pago', ['controlador' => VendedorController::class, 'accion' => 'solicitarPago']);
     $router->post('/vendedores/{id}', ['controlador' => VendedorController::class, 'accion' => 'actualizar']);
     $router->delete('/vendedores/{id}', ['controlador' => VendedorController::class, 'accion' => 'eliminar']);
 
@@ -217,6 +218,7 @@ $router->group(['prefix' => '/api'], function ($router) {
     $router->get('/control-pagos/historial', ['controlador' => ControlPagosController::class, 'accion' => 'historial']);
     $router->get('/control-pagos/premio-info', ['controlador' => ControlPagosController::class, 'accion' => 'premioInfo']);
     $router->post('/control-pagos/solicitar-premio', ['controlador' => ControlPagosController::class, 'accion' => 'solicitarPremio']);
+    $router->post('/control-pagos/rechazar-pendiente', ['controlador' => ControlPagosController::class, 'accion' => 'rechazarPendiente']);
     $router->post('/cargar-pago', ['controlador' => CargaPagosController::class, 'accion' => 'procesar']);
     $router->get('/cargar-pago/cuotas', ['controlador' => CargaPagosController::class, 'accion' => 'cuotas']);
     $router->get('/cargar-pago/deuda', ['controlador' => CargaPagosController::class, 'accion' => 'deuda']);

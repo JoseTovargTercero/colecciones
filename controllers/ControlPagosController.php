@@ -89,4 +89,40 @@ class ControlPagosController
             $this->res(false, $e->getMessage(), null, 500);
         }
     }
+
+    public function rechazarPendiente()
+    {
+        $pendiente_id = (int)($_POST['pendiente_id'] ?? 0);
+        $motivo = trim($_POST['motivo'] ?? '');
+
+        if (!$pendiente_id) {
+            $this->res(false, 'pendiente_id requerido.', null, 400);
+        }
+
+        try {
+            $data = $this->m->rechazarPendiente($pendiente_id);
+
+            if (!empty($data['usuario_id'])) {
+                require_once __DIR__ . '/../models/NotificationModel.php';
+                $notif = new NotificationModel();
+                $revisor = $_SESSION['nombre'] ?? 'El administrador';
+                $notif->crear([
+                    'template_key' => 'pago_rechazado',
+                    'template_params' => [
+                        'monto' => number_format($data['monto'], 2),
+                        'revisor_nombre' => $revisor,
+                        'motivo' => $motivo ? "Motivo: {$motivo}." : 'Comunícate con el gerente para más detalles.',
+                    ],
+                    'route' => '/deudas',
+                    'module' => 'deudas',
+                    'rol' => null,
+                    'user_id' => $data['usuario_id'],
+                ]);
+            }
+
+            $this->res(true, 'Pago rechazado y notificado correctamente.');
+        } catch (Throwable $e) {
+            $this->res(false, $e->getMessage(), null, 500);
+        }
+    }
 }

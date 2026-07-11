@@ -69,11 +69,50 @@ if ($_susc && !empty($_susc['fecha_fin'])) {
                 </a>
             </li>
 
+
+
+            <!-- BCV Rate -->
+            <li class="nav-item lh-1 me-3">
+                <div class="d-flex align-items-center gap-1 text-muted small" style="font-size:0.8rem">
+                    <i class="bx bx-dollar-circle text-success"></i>
+                    <span>BCV:</span>
+                    <?php if (!empty($_SESSION['bcv_ok']) && $_SESSION['bcv_ok']): ?>
+                        <span class="fw-semibold text-dark">Bs. <?= number_format($_SESSION['bcv_valor'], 2, ',', '.') ?></span>
+                        <span style="font-size:0.7rem;opacity:0.7">(<?= date('d/m h:s A', strtotime($_SESSION['bcv_time'])) ?>)</span>
+                    <?php else: ?>
+                        <span class="fw-semibold text-muted">N/D</span>
+                    <?php endif; ?>
+                </div>
+            </li>
+
+            <!-- Suscripción badge -->
+            <?php if ($_suscBadge): ?>
+                <li class="nav-item lh-1 me-3">
+                    <a href="<?= BASE_URL ?><?= $_suscBadge['tipo'] === 'trial' ? 'suscripcion/plan' : 'suscripcion/plan' ?>"
+                        class="susc-badge susc-badge--<?= $_suscBadge['color'] ?>"
+                        title="<?= $_suscBadge['tipo'] === 'trial' ? 'Prueba gratuita' : 'Renovar suscripción' ?>">
+                        <?php if ($_suscBadge['tipo'] === 'trial'): ?>
+                            <span class="susc-badge__icon"><i class="mdi mdi-gift-outline"></i></span>
+                            <span class="susc-badge__text">
+                                Trial · <strong><?= $_suscBadge['dias'] ?></strong> día<?= $_suscBadge['dias'] !== 1 ? 's' : '' ?>
+                            </span>
+                        <?php else: ?>
+                            <span class="susc-badge__icon"><i class="mdi mdi-alert-circle-outline"></i></span>
+                            <span class="susc-badge__text">
+                                Renueva · <strong><?= $_suscBadge['dias'] ?></strong> día<?= $_suscBadge['dias'] !== 1 ? 's' : '' ?>
+                            </span>
+                        <?php endif; ?>
+                    </a>
+                </li>
+            <?php endif; ?>
+            <!-- /Suscripción badge -->
+
+
             <!-- Notifications -->
-            <li class="nav-item dropdown me-2 d-none">
-                <a class="nav-link dropdown-toggle hide-arrow" href="#" data-bs-toggle="dropdown" id="notification-dropdown-toggle">
+            <li class="nav-item dropdown me-2">
+                <a class="nav-link dropdown-toggle hide-arrow" href="#" data-bs-toggle="dropdown" id="notification-dropdown-toggle" style="position:relative">
                     <i class="bx bx-bell bx-sm"></i>
-                    <span class="badge bg-danger rounded-pill badge-notifications" id="alert-count">0</span>
+                    <span class="badge bg-danger rounded-pill badge-notifications" style="position: absolute;top:-4px;right:-6px;padding: 4px;font-size: 10px;" id="alert-count">0</span>
                 </a>
                 <div class="dropdown-menu dropdown-menu-end dropdown-lg py-0" id="dropdown-container">
                     <div class="p-2 border-top-0 border-start-0 border-end-0 border-dashed border">
@@ -108,41 +147,6 @@ if ($_susc && !empty($_susc['fecha_fin'])) {
                 </div>
             </li>
 
-            <!-- BCV Rate -->
-            <li class="nav-item lh-1 me-3">
-                <div class="d-flex align-items-center gap-1 text-muted small" style="font-size:0.8rem">
-                    <i class="bx bx-dollar-circle text-success"></i>
-                    <span>BCV:</span>
-                    <?php if (!empty($_SESSION['bcv_ok']) && $_SESSION['bcv_ok']): ?>
-                        <span class="fw-semibold text-dark">Bs. <?= number_format($_SESSION['bcv_valor'], 2, ',', '.') ?></span>
-                        <span style="font-size:0.7rem;opacity:0.7">(<?= date('d/m h:s A', strtotime($_SESSION['bcv_time'])) ?>)</span>
-                    <?php else: ?>
-                        <span class="fw-semibold text-muted">N/D</span>
-                    <?php endif; ?>
-                </div>
-            </li>
-
-            <!-- Suscripción badge -->
-            <?php if ($_suscBadge): ?>
-                <li class="nav-item lh-1 me-3">
-                    <a href="<?= BASE_URL ?><?= $_suscBadge['tipo'] === 'trial' ? 'suscripcion/plan' : 'suscripcion/plan' ?>"
-                        class="susc-badge susc-badge--<?= $_suscBadge['color'] ?>"
-                        title="<?= $_suscBadge['tipo'] === 'trial' ? 'Prueba gratuita' : 'Renovar suscripción' ?>">
-                        <?php if ($_suscBadge['tipo'] === 'trial'): ?>
-                        <span class="susc-badge__icon"><i class="mdi mdi-gift-outline"></i></span>
-                        <span class="susc-badge__text">
-                            Trial · <strong><?= $_suscBadge['dias'] ?></strong> día<?= $_suscBadge['dias'] !== 1 ? 's' : '' ?>
-                        </span>
-                    <?php else: ?>
-                        <span class="susc-badge__icon"><i class="mdi mdi-alert-circle-outline"></i></span>
-                        <span class="susc-badge__text">
-                            Renueva · <strong><?= $_suscBadge['dias'] ?></strong> día<?= $_suscBadge['dias'] !== 1 ? 's' : '' ?>
-                        </span>
-                    <?php endif; ?>
-                    </a>
-                </li>
-            <?php endif; ?>
-            <!-- /Suscripción badge -->
 
             <!-- User -->
             <li class="nav-item navbar-dropdown dropdown-user dropdown">
@@ -305,30 +309,30 @@ if ($_susc && !empty($_susc['fecha_fin'])) {
         const downloadLi = document.getElementById('download-app-li');
         const downloadButton = document.getElementById('download-app-button');
 
-      /*  if (isMobile) {
-            downloadLi.style.display = 'list-item';
-            downloadButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                Swal.fire({
-                    title: '¿Descargar Aplicación?',
-                    text: "Se descargará el archivo de instalación para Android.",
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Sí, descargar',
-                    cancelButtonText: 'Cancelar',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const downloadUrl = '<?= BASE_URL ?>downloads/app.txt';
-                        const link = document.createElement('a');
-                        link.href = downloadUrl;
-                        link.setAttribute('download', 'app.apk');
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    }
-                });
-            });
-        }*/
+        /*  if (isMobile) {
+              downloadLi.style.display = 'list-item';
+              downloadButton.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  Swal.fire({
+                      title: '¿Descargar Aplicación?',
+                      text: "Se descargará el archivo de instalación para Android.",
+                      icon: 'question',
+                      showCancelButton: true,
+                      confirmButtonText: 'Sí, descargar',
+                      cancelButtonText: 'Cancelar',
+                  }).then((result) => {
+                      if (result.isConfirmed) {
+                          const downloadUrl = '<?= BASE_URL ?>downloads/app.txt';
+                          const link = document.createElement('a');
+                          link.href = downloadUrl;
+                          link.setAttribute('download', 'app.apk');
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                      }
+                  });
+              });
+          }*/
 
         // Search by cedula
         const searchInput = document.getElementById('tbSearchInput');
