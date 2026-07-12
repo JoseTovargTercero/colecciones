@@ -27,7 +27,7 @@
                             <th data-field="coleccion" data-formatter="window.a.fColeccion" data-sortable="true">Colección</th>
                             <th data-field="coleccion_tipo" data-formatter="window.a.fTipo">Tipo</th>
                             <th data-field="empresa_nombre" data-sortable="true">Empresa</th>
-                            <th data-field="precio_venta_vendedor" data-formatter="window.a.fMonto">Monto</th>
+                            <th data-field="costo" data-formatter="window.a.fMonto">Monto</th>
 
                             <th data-field="estado" data-formatter="window.a.fEstado">Estado</th>
                             <th data-formatter="window.a.fAcc" data-align="center">Acciones</th>
@@ -116,13 +116,17 @@
                             <hr>
                             <h6>Agregar Colecciones</h6>
                             <div class="row g-2 mb-3">
-                                <div class="col-md-6">
+                                <div class="col-md-5">
                                     <select class="form-select" id="aColeccionSel">
                                         <option value="">Seleccione colección...</option>
                                     </select>
                                 </div>
-                                <div class="col-md-2">
-                                    <input type="number" class="form-control" id="aColCantidad" value="1" min="1" max="99" oninput="window.a.validarCantidad(this)">
+                                <div class="col-md-3">
+                                    <div class="input-group">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="window.a.decCantidad()">−</button>
+                                        <input type="text" class="form-control text-center" id="aColCantidad" value="1" readonly>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="window.a.incCantidad()">+</button>
+                                    </div>
                                 </div>
                                 <div class="col-md-4">
                                     <button class="btn btn-success w-100" onclick="window.a.agregarColeccion()">
@@ -435,10 +439,18 @@
         async init() {
             const aNVTel = document.getElementById('aNVTelefono');
             if (aNVTel) {
-                aNVTel.addEventListener('input', function () {
+                aNVTel.addEventListener('input', function() {
                     let cleaned = this.value.replace(/\D/g, '');
                     if (this.value.startsWith('0')) {
-                        Swal.fire({ icon: 'error', title: 'El teléfono no puede comenzar con 0.', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'El teléfono no puede comenzar con 0.',
+                            toast: true,
+                            position: 'bottom-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
                         cleaned = cleaned.replace(/^0+/, '');
                     }
                     this.value = cleaned;
@@ -459,7 +471,10 @@
 
             if (this.gerencias.length) {
                 document.getElementById('aGerenciaGroup').style.display = '';
-                this._fillSelect('aGerencia', this.gerencias, g => ({ v: g.id, l: g.nombre }), 'Seleccione gerencia (opcional)...');
+                this._fillSelect('aGerencia', this.gerencias, g => ({
+                    v: g.id,
+                    l: g.nombre
+                }), 'Seleccione gerencia (opcional)...');
             }
 
             this._fillSelect('aEmpresa', this.empresas, e => ({
@@ -539,10 +554,20 @@
             this.cuotasCalc = [];
         },
 
-        validarCantidad(el) {
-            let v = parseInt(el.value);
-            if (isNaN(v) || v < 1) el.value = 1;
-            if (v > 99) el.value = 99;
+        _ajustarCantidad(delta) {
+            const el = document.getElementById('aColCantidad');
+            let v = parseFloat(el.value.replace(',', '.'));
+            if (isNaN(v)) v = 1;
+            v = Math.round((v + delta) / 0.5) * 0.5;
+            if (v < 0.5) v = 0.5;
+            if (v > 99) v = 99;
+            el.value = v.toString().replace('.', ',');
+        },
+        incCantidad() {
+            this._ajustarCantidad(0.5);
+        },
+        decCantidad() {
+            this._ajustarCantidad(-0.5);
         },
 
         agregarColeccion() {
@@ -578,7 +603,7 @@
                 nombre: data.nombre,
                 tipo: data.tipo,
                 precio_venta_vendedor: parseFloat(data.precio_venta_vendedor),
-                cantidad: parseInt(document.getElementById('aColCantidad').value) || 1
+                cantidad: parseFloat(document.getElementById('aColCantidad').value.replace(',', '.'))
             });
             document.getElementById('aEmpresa').disabled = true;
             document.getElementById('aTemporada').disabled = true;
@@ -633,7 +658,11 @@
 
             if (telefonoRaw) {
                 if (!/^\d{10}$/.test(telefonoRaw)) {
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'El teléfono debe tener exactamente 10 dígitos.' });
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'El teléfono debe tener exactamente 10 dígitos.'
+                    });
                     return;
                 }
             }

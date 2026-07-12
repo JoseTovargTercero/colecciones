@@ -17,6 +17,7 @@ class AsignacionModel
                     v.nombre as vendedor_nombre, v.cedula as vendedor_cedula,
                     cc.nombre as coleccion_nombre, cc.tipo as coleccion_tipo,
                     cc.precio_venta_vendedor,
+                    ac.costo,
                     t.nombre as temporada_nombre,
                     e.nombre as empresa_nombre,
                     g.nombre as gerencia_nombre
@@ -71,8 +72,8 @@ class AsignacionModel
 
             $stmt = $this->db->prepare(
                 "INSERT INTO asignaciones_colecciones
-                 (vendedor_id, coleccion_combo_id, temporada_id, estado, aplica_premio_especial, fecha_asignacion, usuario_id, costo, ganancia_vendedor, ganancia_gerente, gerencia)
-                 VALUES (?, ?, ?, 'activa', 0, ?, ?, ?, ?, ?, NULLIF(?, 0))"
+                 (vendedor_id, coleccion_combo_id, temporada_id, estado, aplica_premio_especial, fecha_asignacion, usuario_id, costo, ganancia_vendedor, ganancia_gerente, gerencia, cantidad_redundante)
+                 VALUES (?, ?, ?, 'activa', 0, ?, ?, ?, ?, ?, NULLIF(?, 0), ?)"
             );
 
             $stmt2 = $this->db->prepare(
@@ -83,14 +84,14 @@ class AsignacionModel
 
             foreach ($colecciones as $item) {
                 $coleccion_id = $item['id'] ?? '';
-                $cantidad = isset($item['cantidad']) ? max(1, (int)$item['cantidad']) : 1;
                 if (!$coleccion_id) continue;
 
                 $cs = $this->db->prepare(
                     "SELECT cc.precio_venta_vendedor, cc.ganancia_vendedor, cc.precio_base
                      FROM colecciones_combos cc
                      INNER JOIN empresas e ON cc.empresa_id = e.id
-                     WHERE cc.id = ? AND e.usuario_id = ?");
+                     WHERE cc.id = ? AND e.usuario_id = ?"
+                );
                 $cs->bind_param('ss', $coleccion_id, $this->user);
                 $cs->execute();
                 $r = $cs->get_result();
@@ -100,26 +101,20 @@ class AsignacionModel
                 if (!$row) throw new Exception('No existe la colección ' . $coleccion_id);
 
                 $precio_venta_vendedor = (float)$row['precio_venta_vendedor'];
-                $ganancia_vendedor = $row['ganancia_vendedor'];
-                $ganancia_gerente = (float)$row['precio_venta_vendedor'] - (float)$row['precio_base'];
+                $ganancia_vendedor = (float)$row['ganancia_vendedor'];
+                $ganancia_gerente = $precio_venta_vendedor - (float)$row['precio_base'];
 
-                for ($j = 0; $j < $cantidad; $j++) {
-                    $stmt->bind_param('issssdddi', $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $this->user, $precio_venta_vendedor, $ganancia_vendedor, $ganancia_gerente, $gerencia_id);
-                    if (!$stmt->execute()) {
-                        throw new Exception("Error al insertar asignación: " . $stmt->error);
-                    }
-                    $asignacion_id = $this->db->insert_id;
-                    $last_id = $asignacion_id;
+                $cantidad = isset($item['cantidad']) ? (float)$item['cantidad'] : 1;
+                if ($cantidad < 0.5) $cantidad = 0.5;
 
-                    foreach ($cuotas as $c) {
-                        $num           = (int)$c['numero'];
-                        $porcentaje    = (float)$c['porcentaje'];
-                        $monto         = $precio_venta_vendedor * $porcentaje / 100;
-                        $fecha_pago    = $c['fecha_pago'];
+                $full = (int)$cantidad;
+                $hasHalf = ($cantidad - $full) >= 0.5;
 
-                        $stmt2->bind_param('iidddss', $asignacion_id, $num, $porcentaje, $monto, $monto, $fecha_pago, $this->user);
-                        $stmt2->execute();
-                    }
+                for ($j = 0; $j < $full; $j++) {
+                    $this->_insertarAsignacion($stmt, $stmt2, $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $this->user, $precio_venta_vendedor, $ganancia_vendedor, $ganancia_gerente, $gerencia_id, $cuotas, $last_id, 1);
+                }
+                if ($hasHalf) {
+                    $this->_insertarAsignacion($stmt, $stmt2, $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $this->user, $precio_venta_vendedor * 0.5, $ganancia_vendedor * 0.5, $ganancia_gerente * 0.5, $gerencia_id, $cuotas, $last_id, 0.5);
                 }
             }
             $stmt->close();
@@ -196,6 +191,26 @@ class AsignacionModel
         } catch (Exception $e) {
             $this->db->rollback();
             throw $e;
+        }
+    }
+
+    private function _insertarAsignacion($stmt, $stmt2, $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $user, $precio, $ganancia, $ganancia_gerente, $gerencia_id, $cuotas, &$last_id, $cantidadIndividual): void
+    {
+        $stmt->bind_param('issssdddid', $vendedor_id, $coleccion_id, $temporada_id, $fecha_asig, $user, $precio, $ganancia, $ganancia_gerente, $gerencia_id, $cantidadIndividual);
+        if (!$stmt->execute()) {
+            throw new Exception("Error al insertar asignación: " . $stmt->error);
+        }
+        $asignacion_id = $this->db->insert_id;
+        $last_id = $asignacion_id;
+
+        foreach ($cuotas as $c) {
+            $num           = (int)$c['numero'];
+            $porcentaje    = (float)$c['porcentaje'];
+            $monto         = $precio * $porcentaje / 100;
+            $fecha_pago    = $c['fecha_pago'];
+
+            $stmt2->bind_param('iidddss', $asignacion_id, $num, $porcentaje, $monto, $monto, $fecha_pago, $user);
+            $stmt2->execute();
         }
     }
 }
