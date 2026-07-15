@@ -11,7 +11,15 @@ require_once __DIR__ . '/../config/Database.php';
  */
 function ejecutarActualizacionEstatusCuotas(bool $echoMode = true)
 {
-    if ($echoMode) echo "[" . date('Y-m-d H:i:s') . "] Iniciando actualización de estatus de cuotas...\n";
+    $log = function(string $msg) use ($echoMode) {
+        $line = "[" . date('Y-m-d H:i:s') . "] " . trim($msg) . "\n";
+        if ($echoMode) {
+            echo $line;
+        }
+        file_put_contents(__DIR__ . '/cron_cuotas.log', $line, FILE_APPEND);
+    };
+
+    $log("Iniciando actualización de estatus de cuotas...");
 
     try {
         $db = Database::getInstance();
@@ -25,15 +33,15 @@ function ejecutarActualizacionEstatusCuotas(bool $echoMode = true)
             }
             $res->free();
         }
-        if ($echoMode) echo "Empresas cargadas: " . count($empresas) . "\n";
+        $log("Empresas cargadas: " . count($empresas));
 
         if (empty($empresas)) {
             $msg = "No hay empresas registradas.";
-            if ($echoMode) {
-                echo $msg . "\n";
-                return;
+            $log($msg);
+            if (!$echoMode) {
+                return ['success' => true, 'message' => $msg, 'actualizados' => 0, 'errores' => 0];
             }
-            return ['success' => true, 'message' => $msg, 'actualizados' => 0, 'errores' => 0];
+            return;
         }
 
         // 🐴 ponytail: direct array iteration for both table types instead of code duplication or abstractions
@@ -87,24 +95,24 @@ function ejecutarActualizacionEstatusCuotas(bool $echoMode = true)
                             $stmtMargen->bind_param('i', $cuotaId);
                             $stmtMargen->execute();
                             $actualizados++;
-                            if ($echoMode) echo "  {$q['nombre']} #{$cuotaId}: pendiente -> dentro_de_margen (venc: {$row['fecha_pago']}, tope: {$fechaLimite->format('Y-m-d')})\n";
+                            $log("  {$q['nombre']} #{$cuotaId}: pendiente -> dentro_de_margen (venc: {$row['fecha_pago']}, tope: {$fechaLimite->format('Y-m-d')})");
                         } elseif ($hoy > $fechaLimite) {
                             $stmtVencido->bind_param('i', $cuotaId);
                             $stmtVencido->execute();
                             $actualizados++;
-                            if ($echoMode) echo "  {$q['nombre']} #{$cuotaId}: pendiente -> vencido (venc: {$row['fecha_pago']}, tope: {$fechaLimite->format('Y-m-d')})\n";
+                            $log("  {$q['nombre']} #{$cuotaId}: pendiente -> vencido (venc: {$row['fecha_pago']}, tope: {$fechaLimite->format('Y-m-d')})");
                         }
                     } elseif ($estatus === 'dentro_de_margen') {
                         if ($hoy > $fechaLimite) {
                             $stmtVencido->bind_param('i', $cuotaId);
                             $stmtVencido->execute();
                             $actualizados++;
-                            if ($echoMode) echo "  {$q['nombre']} #{$cuotaId}: dentro_de_margen -> vencido (venc: {$row['fecha_pago']}, tope: {$fechaLimite->format('Y-m-d')})\n";
+                            $log("  {$q['nombre']} #{$cuotaId}: dentro_de_margen -> vencido (venc: {$row['fecha_pago']}, tope: {$fechaLimite->format('Y-m-d')})");
                         }
                     }
                 } catch (Exception $e) {
                     $errores++;
-                    if ($echoMode) echo "  Error en {$q['nombre']} #{$cuotaId}: " . $e->getMessage() . "\n";
+                    $log("  Error en {$q['nombre']} #{$cuotaId}: " . $e->getMessage());
                 }
             }
 
@@ -113,16 +121,15 @@ function ejecutarActualizacionEstatusCuotas(bool $echoMode = true)
             $stmtVencido->close();
         }
 
-        if ($echoMode) {
-            echo "Actualizados: {$actualizados}, Errores: {$errores}\n";
-            echo "[" . date('Y-m-d H:i:s') . "] Finalizado.\n";
-        } else {
+        $log("Actualizados: {$actualizados}, Errores: {$errores}");
+        $log("Finalizado.");
+
+        if (!$echoMode) {
             return ['success' => true, 'message' => "OK", 'actualizados' => $actualizados, 'errores' => $errores];
         }
     } catch (Throwable $e) {
-        if ($echoMode) {
-            echo "ERROR FATAL: " . $e->getMessage() . "\n";
-        } else {
+        $log("ERROR FATAL: " . $e->getMessage());
+        if (!$echoMode) {
             return ['success' => false, 'message' => $e->getMessage(), 'actualizados' => 0, 'errores' => 0];
         }
     }
