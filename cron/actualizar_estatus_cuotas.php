@@ -36,72 +36,82 @@ function ejecutarActualizacionEstatusCuotas(bool $echoMode = true)
             return ['success' => true, 'message' => $msg, 'actualizados' => 0, 'errores' => 0];
         }
 
-        // Consultar cuotas pendientes o en margen con su empresa
-        $sql = "SELECT c.id, c.estatus_pago, c.fecha_pago, cc.empresa_id
-                FROM cuotas_coleccion c
-                INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
-                INNER JOIN colecciones_combos cc ON ac.coleccion_combo_id = cc.id
-                WHERE c.estatus_pago IN ('pendiente', 'dentro_de_margen')";
-
-        $res = $db->query($sql);
-        if (!$res) {
-            throw new RuntimeException("Error en consulta de cuotas: " . $db->error);
-        }
+        // 🐴 ponytail: direct array iteration for both table types instead of code duplication or abstractions
+        $queries = [
+            [
+                'select' => "SELECT c.id, c.estatus_pago, c.fecha_pago, cc.empresa_id
+                             FROM cuotas_coleccion c
+                             INNER JOIN asignaciones_colecciones ac ON c.asignacion_id = ac.id
+                             INNER JOIN colecciones_combos cc ON ac.coleccion_combo_id = cc.id
+                             WHERE c.estatus_pago IN ('pendiente', 'dentro_de_margen')",
+                'update_margen' => "UPDATE cuotas_coleccion SET estatus_pago = 'dentro_de_margen' WHERE id = ?",
+                'update_vencido' => "UPDATE cuotas_coleccion SET estatus_pago = 'vencido' WHERE id = ?",
+                'nombre' => 'cuotas_coleccion'
+            ],
+            [
+                'select' => "SELECT c.id, c.estatus_pago, c.fecha_pago, aa.empresa_id
+                             FROM cuotas_articulo c
+                             INNER JOIN asignaciones_articulos aa ON c.asignacion_id = aa.id
+                             WHERE c.estatus_pago IN ('pendiente', 'dentro_de_margen')",
+                'update_margen' => "UPDATE cuotas_articulo SET estatus_pago = 'dentro_de_margen' WHERE id = ?",
+                'update_vencido' => "UPDATE cuotas_articulo SET estatus_pago = 'vencido' WHERE id = ?",
+                'nombre' => 'cuotas_articulo'
+            ]
+        ];
 
         $hoy = new DateTime('today');
         $actualizados = 0;
         $errores = 0;
 
-        $stmtMargen = $db->prepare(
-            "UPDATE cuotas_coleccion SET estatus_pago = 'dentro_de_margen' WHERE id = ?"
-        );
-        if (!$stmtMargen) throw new RuntimeException("Error prepare margen: " . $db->error);
+        foreach ($queries as $q) {
+            $res = $db->query($q['select']);
+            if (!$res) throw new RuntimeException("Error en consulta {$q['nombre']}: " . $db->error);
 
-        $stmtVencido = $db->prepare(
-            "UPDATE cuotas_coleccion SET estatus_pago = 'vencido' WHERE id = ?"
-        );
-        if (!$stmtVencido) throw new RuntimeException("Error prepare vencido: " . $db->error);
+            $stmtMargen = $db->prepare($q['update_margen']);
+            $stmtVencido = $db->prepare($q['update_vencido']);
+            if (!$stmtMargen || !$stmtVencido) throw new RuntimeException("Error prepare en {$q['nombre']}: " . $db->error);
 
-        while ($row = $res->fetch_assoc()) {
-            $cuotaId = (int)$row['id'];
-            $estatus = $row['estatus_pago'];
-            $empresaId = (int)$row['empresa_id'];
-            $diasRetraso = $empresas[$empresaId] ?? 3;
+            while ($row = $res->fetch_assoc()) {
+                $cuotaId = (int)$row['id'];
+                $estatus = $row['estatus_pago'];
+                $empresaId = (int)$row['empresa_id'];
+                $diasRetraso = $empresas[$empresaId] ?? 3;
 
-            try {
-                $fechaVenc = new DateTime($row['fecha_pago']);
-                $fechaLimite = clone $fechaVenc;
-                $fechaLimite->modify("+{$diasRetraso} days");
+                try {
+                    $fechaVenc = new DateTime($row['fecha_pago']);
+                    $fechaLimite = clone $fechaVenc;
+                    $fechaLimite->modify("+{$diasRetraso} days");
 
-                if ($estatus === 'pendiente') {
-                    if ($hoy >= $fechaVenc && $hoy <= $fechaLimite) {
-                        $stmtMargen->bind_param('i', $cuotaId);
-                        $stmtMargen->execute();
-                        $actualizados++;
-                        if ($echoMode) echo "  Cuota #{$cuotaId}: pendiente -> dentro_de_margen (venc: {$row['fecha_pago']}, tope: {$fechaLimite->format('Y-m-d')})\n";
-                    } elseif ($hoy > $fechaLimite) {
-                        $stmtVencido->bind_param('i', $cuotaId);
-                        $stmtVencido->execute();
-                        $actualizados++;
-                        if ($echoMode) echo "  Cuota #{$cuotaId}: pendiente -> vencido (venc: {$row['fecha_pago']}, tope: {$fechaLimite->format('Y-m-d')})\n";
+                    if ($estatus === 'pendiente') {
+                        if ($hoy >= $fechaVenc && $hoy <= $fechaLimite) {
+                            $stmtMargen->bind_param('i', $cuotaId);
+                            $stmtMargen->execute();
+                            $actualizados++;
+                            if ($echoMode) echo "  {$q['nombre']} #{$cuotaId}: pendiente -> dentro_de_margen (venc: {$row['fecha_pago']}, tope: {$fechaLimite->format('Y-m-d')})\n";
+                        } elseif ($hoy > $fechaLimite) {
+                            $stmtVencido->bind_param('i', $cuotaId);
+                            $stmtVencido->execute();
+                            $actualizados++;
+                            if ($echoMode) echo "  {$q['nombre']} #{$cuotaId}: pendiente -> vencido (venc: {$row['fecha_pago']}, tope: {$fechaLimite->format('Y-m-d')})\n";
+                        }
+                    } elseif ($estatus === 'dentro_de_margen') {
+                        if ($hoy > $fechaLimite) {
+                            $stmtVencido->bind_param('i', $cuotaId);
+                            $stmtVencido->execute();
+                            $actualizados++;
+                            if ($echoMode) echo "  {$q['nombre']} #{$cuotaId}: dentro_de_margen -> vencido (venc: {$row['fecha_pago']}, tope: {$fechaLimite->format('Y-m-d')})\n";
+                        }
                     }
-                } elseif ($estatus === 'dentro_de_margen') {
-                    if ($hoy > $fechaLimite) {
-                        $stmtVencido->bind_param('i', $cuotaId);
-                        $stmtVencido->execute();
-                        $actualizados++;
-                        if ($echoMode) echo "  Cuota #{$cuotaId}: dentro_de_margen -> vencido (venc: {$row['fecha_pago']}, tope: {$fechaLimite->format('Y-m-d')})\n";
-                    }
+                } catch (Exception $e) {
+                    $errores++;
+                    if ($echoMode) echo "  Error en {$q['nombre']} #{$cuotaId}: " . $e->getMessage() . "\n";
                 }
-            } catch (Exception $e) {
-                $errores++;
-                if ($echoMode) echo "  Error cuota #{$cuotaId}: " . $e->getMessage() . "\n";
             }
-        }
 
-        $res->free();
-        $stmtMargen->close();
-        $stmtVencido->close();
+            $res->free();
+            $stmtMargen->close();
+            $stmtVencido->close();
+        }
 
         if ($echoMode) {
             echo "Actualizados: {$actualizados}, Errores: {$errores}\n";
